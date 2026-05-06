@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>세계사 타임라인</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="toolbar">
+  <h1>세계사 타임라인</h1>
+  <div class="controls">
+    <label class="ctl">시점
+      <input type="number" id="indicator-year" step="1" value="0">
+    </label>
+    <label class="ctl">범위
+      <input type="number" id="range-start" step="100" value="-3000" title="시작 연도"> ~
+      <input type="number" id="range-end" step="100" value="2100" title="끝 연도">
+    </label>
+    <label class="ctl">줌
+      <input type="range" id="zoom" min="0.2" max="5" step="0.1" value="1">
+      <span id="zoom-value">1.0×</span>
+    </label>
+    <span class="spacer"></span>
+    <button data-action="add-region">+ 지역</button>
+    <button data-action="add-country">+ 나라</button>
+    <button data-action="add-entry" class="primary">+ 시기</button>
+    <button data-action="add-event">+ 사건</button>
+    <span class="spacer"></span>
+    <button data-action="connect-file" id="btn-file-connect" title="data.xml에 직접 저장하려면 파일 연결">📁 파일 연결</button>
+    <button data-action="github" id="btn-github" title="GitHub 자동 커밋 설정">📤 GitHub</button>
+    <button data-action="export" title="data.xml 다운로드">내보내기</button>
+    <button data-action="import" title="data.xml 불러오기">불러오기</button>
+    <button data-action="reset" class="danger">초기화</button>
+    <input type="file" id="import-file" accept=".xml,application/xml,text/xml" hidden>
+  </div>
+</header>
+
+<div class="scroll-container" id="scroll">
+  <div class="grid" id="grid">
+    <div class="corner sticky-left sticky-top">
+      <div class="corner-top">사건</div>
+      <div class="corner-bottom">지역 / 나라</div>
+    </div>
+    <div class="header sticky-top" id="header">
+      <div class="event-track" id="event-track"></div>
+      <div class="year-axis" id="year-axis">
+        <div class="indicator-handle" id="indicator-handle"></div>
+        <div class="indicator-label" id="indicator-label">0</div>
+      </div>
+    </div>
+    <div class="rows-labels sticky-left" id="rows-labels"></div>
+    <div class="rows-content" id="rows-content">
+      <div class="grid-bg" id="grid-bg"></div>
+      <div class="entries-layer" id="entries-layer"></div>
+      <div class="indicator-line" id="indicator-line"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-backdrop" hidden>
+  <div class="modal">
+    <h2 id="modal-title">편집</h2>
+    <form id="modal-form" class="modal-body"></form>
+    <div class="modal-actions">
+      <button type="button" id="modal-delete" class="danger">삭제</button>
+      <span class="spacer"></span>
+      <button type="button" id="modal-cancel">취소</button>
+      <button type="button" id="modal-save" class="primary">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="entry-tooltip" id="entry-tooltip" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>
