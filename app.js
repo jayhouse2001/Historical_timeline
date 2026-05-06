@@ -30,7 +30,7 @@ const COLOR_PALETTE = [
 // 상태
 // ============================================================
 let state = null;
-let fileHandle = null;  // FileSystemFileHandle (data.xml 직접 저장용)
+let dirHandle = null;  // FileSystemDirectoryHandle (data 폴더 — data.xml + images 저장용)
 
 // ============================================================
 // IndexedDB (파일 핸들 영속화)
@@ -55,22 +55,20 @@ const idbSet = (k, v) => idbOp('readwrite', s => s.put(v, k));
 const idbDel = k => idbOp('readwrite', s => s.delete(k));
 
 // ============================================================
-// File System Access (data.xml 직접 저장)
+// File System Access (data 폴더 직접 저장 — data.xml + images/)
 // ============================================================
-async function connectFile() {
-  if (!('showOpenFilePicker' in window)) {
-    alert('이 브라우저는 직접 파일 저장을 지원하지 않습니다.\n"내보내기" 버튼으로 다운로드한 뒤 data.xml을 덮어쓰세요.\n(Chrome / Edge 권장)');
+async function connectDir() {
+  if (!('showDirectoryPicker' in window)) {
+    alert('이 브라우저는 직접 폴더 저장을 지원하지 않습니다.\n"내보내기" 버튼으로 다운로드한 뒤 수동으로 덮어쓰세요.\n(Chrome / Edge 권장)');
     return;
   }
   try {
-    const [handle] = await window.showOpenFilePicker({
-      types: [{ description: 'XML', accept: { 'application/xml': ['.xml'] } }],
-      multiple: false
-    });
+    const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
     const perm = await handle.requestPermission({ mode: 'readwrite' });
     if (perm !== 'granted') { alert('쓰기 권한이 거부되었습니다.'); return; }
-    fileHandle = handle;
-    await idbSet('fileHandle', handle);
+    dirHandle = handle;
+    await idbSet('dirHandle', handle);
+    await idbDel('fileHandle'); // 옛 파일 핸들 정리
     updateFileStatus();
     if (state) await writeFile(true);
   } catch (e) {
@@ -78,54 +76,68 @@ async function connectFile() {
   }
 }
 
-async function disconnectFile() {
-  fileHandle = null;
-  await idbDel('fileHandle');
+async function disconnectDir() {
+  dirHandle = null;
+  await idbDel('dirHandle');
   updateFileStatus();
 }
 
-async function restoreFileHandle() {
-  if (!('showOpenFilePicker' in window)) { updateFileStatus(); return; }
+async function restoreDirHandle() {
+  if (!('showDirectoryPicker' in window)) { updateFileStatus(); return; }
   try {
-    const stored = await idbGet('fileHandle');
+    const stored = await idbGet('dirHandle');
     if (!stored) { updateFileStatus(); return; }
     const perm = await stored.queryPermission({ mode: 'readwrite' });
-    if (perm === 'granted') fileHandle = stored;
-    // 'prompt' 상태면 "파일 연결" 버튼 클릭 시 requestPermission으로 복구
+    if (perm === 'granted') dirHandle = stored;
+    // 'prompt' 상태면 폴더 연결 버튼 클릭으로 복구
   } catch (_) {}
   updateFileStatus();
 }
 
 async function writeFile(notify = false) {
-  if (!fileHandle) return false;
+  if (!dirHandle) return false;
   try {
-    const w = await fileHandle.createWritable();
+    const fh = await dirHandle.getFileHandle('data.xml', { create: true });
+    const w = await fh.createWritable();
     await w.write(serializeXml(state));
     await w.close();
     if (notify) flashStatus('✓ 저장됨');
     return true;
   } catch (e) {
     console.warn('파일 쓰기 실패:', e);
-    // 권한이 만료되었거나 핸들이 무효해진 경우
-    fileHandle = null;
-    await idbDel('fileHandle');
+    dirHandle = null;
+    await idbDel('dirHandle');
     updateFileStatus();
     flashStatus('✗ 저장 실패 — 다시 연결 필요');
     return false;
   }
 }
 
+async function writeImageToDir(file, filename) {
+  if (!dirHandle) throw new Error('폴더 미연결');
+  let imagesDir;
+  try {
+    imagesDir = await dirHandle.getDirectoryHandle('images', { create: true });
+  } catch (e) {
+    throw new Error('images 폴더 생성 실패: ' + e.message);
+  }
+  const fh = await imagesDir.getFileHandle(filename, { create: true });
+  const w = await fh.createWritable();
+  await w.write(file);
+  await w.close();
+}
+
 function updateFileStatus() {
   const btn = document.getElementById('btn-file-connect');
   if (!btn) return;
-  if (fileHandle) {
-    btn.textContent = '✓ ' + fileHandle.name;
+  if (dirHandle) {
+    btn.textContent = '✓ ' + dirHandle.name + '/';
     btn.classList.add('connected');
-    btn.title = `${fileHandle.name} — 편집 시 자동 저장됨 (클릭하면 연결 해제)`;
+    btn.title = `${dirHandle.name}/ 폴더 — 편집 시 data.xml + 이미지 자동 저장 (클릭하면 해제)`;
   } else {
-    btn.textContent = '📁 파일 연결';
+    btn.textContent = '📁 폴더 연결';
     btn.classList.remove('connected');
-    btn.title = 'data.xml에 직접 저장하려면 파일 연결';
+    btn.title = 'data 폴더에 직접 저장하려면 폴더 연결';
   }
 }
 
@@ -214,6 +226,133 @@ function utf8ToBase64(s) {
   return btoa(unescape(encodeURIComponent(s)));
 }
 
+// repo 안의 data 폴더 경로 (data.xml의 부모 디렉토리)
+function ghDataDirInRepo() {
+  const p = githubConfig?.path || 'data/data.xml';
+  return p.replace(/[^/]+$/, ''); // 'X/data/data.xml' → 'X/data/'
+}
+
+// 임의 파일 업로드 (이미지 등). returnedPath = repo 안 경로
+async function ghPutFile(repoPath, base64Content, message) {
+  if (!githubConfig) throw new Error('GitHub 미연결');
+  const enc = repoPath.split('/').map(encodeURIComponent).join('/');
+  const url = `https://api.github.com/repos/${encodeURIComponent(githubConfig.owner)}/${encodeURIComponent(githubConfig.repo)}/contents/${enc}`;
+
+  // 기존 파일 SHA 조회 (있으면 덮어쓰기, 없으면 신규)
+  let sha = null;
+  try {
+    const r = await fetch(`${url}?ref=${encodeURIComponent(githubConfig.branch)}`, {
+      headers: ghHeaders(), cache: 'no-store'
+    });
+    if (r.ok) sha = (await r.json()).sha;
+  } catch (_) {}
+
+  const body = {
+    message: message || `Upload ${repoPath}`,
+    content: base64Content,
+    branch: githubConfig.branch
+  };
+  if (sha) body.sha = sha;
+
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { ...ghHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(`PUT ${res.status}: ${(await res.text()).slice(0, 120)}`);
+  return repoPath;
+}
+
+function arrayBufferToBase64(buf) {
+  let bin = '';
+  const bytes = new Uint8Array(buf);
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(bin);
+}
+
+// 세션 동안 업로드한 파일을 path → blob URL로 매핑 (Pages 재빌드 전에도 즉시 미리보기)
+const imageBlobs = new Map();
+
+function resolveImage(path) {
+  if (!path) return '';
+  return imageBlobs.get(path) || path;
+}
+
+// 이미지 파일 삭제 (로컬 폴더 + GitHub repo 양쪽에서)
+async function deleteImageFile(imagePath) {
+  if (!imagePath) return;
+  if (imagePath.startsWith('data:') || /^https?:\/\//.test(imagePath)) return; // 외부/인라인은 건드릴 수 없음
+  const parts = imagePath.split('/');
+  const filename = parts[parts.length - 1];
+  if (!filename) return;
+
+  if (dirHandle) {
+    try {
+      const imagesDir = await dirHandle.getDirectoryHandle('images');
+      await imagesDir.removeEntry(filename);
+    } catch (e) { console.warn('로컬 이미지 삭제 실패:', e); }
+  }
+  if (githubConfig) {
+    try {
+      await ghDeleteFile(`${ghDataDirInRepo()}images/${filename}`, `Delete image ${filename}`);
+    } catch (e) { console.warn('GitHub 이미지 삭제 실패:', e); }
+  }
+  if (imageBlobs.has(imagePath)) {
+    URL.revokeObjectURL(imageBlobs.get(imagePath));
+    imageBlobs.delete(imagePath);
+  }
+}
+
+async function ghDeleteFile(repoPath, message) {
+  if (!githubConfig) return;
+  const enc = repoPath.split('/').map(encodeURIComponent).join('/');
+  const url = `https://api.github.com/repos/${encodeURIComponent(githubConfig.owner)}/${encodeURIComponent(githubConfig.repo)}/contents/${enc}`;
+  let sha = null;
+  try {
+    const r = await fetch(`${url}?ref=${encodeURIComponent(githubConfig.branch)}`, { headers: ghHeaders() });
+    if (r.ok) sha = (await r.json()).sha;
+  } catch (_) {}
+  if (!sha) return; // 원격에 파일 없음
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: { ...ghHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: message || `Delete ${repoPath}`, sha, branch: githubConfig.branch })
+  });
+  if (!res.ok) throw new Error(`DELETE ${res.status}: ${(await res.text()).slice(0, 120)}`);
+}
+
+function isImageUsedByOthers(imagePath, currentEntryId) {
+  return state.entries.some(e => e.id !== currentEntryId && (e.images || []).includes(imagePath));
+}
+
+// 이미지 업로드: data 폴더 연결 시 로컬 저장, GitHub 연결 시 repo에도 업로드
+async function uploadImage(file) {
+  if (!dirHandle && !githubConfig) {
+    throw new Error('폴더 연결 또는 GitHub 연결이 필요합니다 (이미지를 저장할 곳).');
+  }
+  const safe = file.name.replace(/[^a-zA-Z0-9._\-]/g, '_');
+  const ts = Date.now().toString(36);
+  const filename = `${ts}_${safe}`;
+  const pageRel = `data/images/${filename}`;
+
+  // 둘 다 켜져 있으면 양쪽에 저장
+  if (dirHandle) {
+    await writeImageToDir(file, filename);
+  }
+  if (githubConfig) {
+    const buf = await file.arrayBuffer();
+    const b64 = arrayBufferToBase64(buf);
+    const repoPath = `${ghDataDirInRepo()}images/${filename}`;
+    await ghPutFile(repoPath, b64, `Upload image ${filename}`);
+  }
+
+  imageBlobs.set(pageRel, URL.createObjectURL(file));
+  return pageRel;
+}
+
 async function ghCommit() {
   if (!githubConfig) return false;
   const xml = serializeXml(state);
@@ -287,7 +426,7 @@ function openGithubModal() {
         <input name="branch" type="text" value="${escAttr(c.branch || 'main')}" required>
       </label>
       <label>파일 경로
-        <input name="path" type="text" value="${escAttr(c.path || 'data.xml')}" placeholder="Historical_timeline/data.xml" required>
+        <input name="path" type="text" value="${escAttr(c.path || 'Historical_timeline/data/data.xml')}" placeholder="Historical_timeline/data/data.xml" required>
       </label>
     </div>
     <label>Personal Access Token
@@ -373,7 +512,7 @@ function parseXml(text) {
     countryIds: (el.getAttribute('countries') || '').split(/\s+/).filter(Boolean),
     color: el.getAttribute('color') || '',
     description: el.querySelector('description')?.textContent?.trim() || '',
-    image: el.querySelector('image')?.textContent?.trim() || ''
+    images: [...el.querySelectorAll('image')].map(im => im.textContent?.trim()).filter(Boolean)
   }));
   const events = [...doc.querySelectorAll('events > event')].map(el => ({
     id: el.getAttribute('id'),
@@ -411,12 +550,13 @@ function serializeXml(s) {
       `start="${e.startYear}" end="${e.endYear}" ` +
       `countries="${escXml(e.countryIds.join(' '))}"` +
       (e.color ? ` color="${escXml(e.color)}"` : '');
-    if (!e.description && !e.image) {
+    const imgs = (e.images || []).filter(Boolean);
+    if (!e.description && imgs.length === 0) {
       out += `    <entry ${attrs}/>\n`;
     } else {
       out += `    <entry ${attrs}>\n`;
       if (e.description) out += `      <description>${escXml(e.description)}</description>\n`;
-      if (e.image)       out += `      <image>${escXml(e.image)}</image>\n`;
+      for (const img of imgs) out += `      <image>${escXml(img)}</image>\n`;
       out += `    </entry>\n`;
     }
   }
@@ -440,7 +580,7 @@ function persist() {
     localStorage.setItem(STORAGE_KEY, serializeXml(state));
     persistRuntime();
   } catch (e) { /* quota 등 무시 */ }
-  if (fileHandle) writeFile().catch(() => {});
+  if (dirHandle) writeFile().catch(() => {});
   if (githubConfig) ghCommitDebounced();
 }
 
@@ -540,6 +680,16 @@ function reorderCountry(regionId, dragId, targetId, isBefore) {
 }
 
 async function loadInitial() {
+  // 0) 폴더 연결돼 있으면 그 폴더의 data.xml을 항상 우선 로드 (캐시 무시)
+  if (dirHandle) {
+    try {
+      const fh = await dirHandle.getFileHandle('data.xml');
+      const file = await fh.getFile();
+      const text = await file.text();
+      state = parseXml(text);
+      return 'dir';
+    } catch (e) { console.warn('dirHandle로 data.xml 읽기 실패:', e); }
+  }
   // 1) localStorage
   const cached = localStorage.getItem(STORAGE_KEY);
   if (cached) {
@@ -548,7 +698,7 @@ async function loadInitial() {
   }
   // 2) data.xml fetch
   try {
-    const res = await fetch('data.xml', { cache: 'no-cache' });
+    const res = await fetch('data/data.xml', { cache: 'no-cache' });
     if (res.ok) {
       const text = await res.text();
       state = parseXml(text);
@@ -803,8 +953,9 @@ function renderEntries() {
       bar.style.height = h + 'px';
       bar.style.background = e.color || COLOR_PALETTE[hash(e.id) % COLOR_PALETTE.length];
       bar.dataset.entryId = e.id;
+      const imgCount = (e.images || []).length;
       bar.innerHTML = `<span class="name">${escHtml(e.name)}</span>` +
-                      (e.image ? `<span class="img-badge" title="이미지 있음">🖼</span>` : '');
+                      (imgCount > 0 ? `<span class="img-badge" title="이미지 ${imgCount}장">🖼${imgCount > 1 ? imgCount : ''}</span>` : '');
       bar.addEventListener('click', ev => { ev.stopPropagation(); openEntryModal(e.id); });
       bar.addEventListener('mouseenter', ev => showTooltip(ev, e));
       bar.addEventListener('mousemove',  ev => moveTooltip(ev));
@@ -845,7 +996,7 @@ function showTooltip(evt, e) {
     `<div class="tt-name">${escHtml(e.name)}</div>` +
     `<div class="tt-period">${fmtYear(e.startYear)} ~ ${fmtYear(e.endYear)} ` +
     `(${e.endYear - e.startYear}년)</div>` +
-    (e.image ? `<img src="${escHtml(e.image)}" alt="" onerror="this.style.display='none'">` : '') +
+    ((e.images || []).map(img => `<img src="${escHtml(resolveImage(img))}" alt="" onerror="this.style.display='none'" style="margin-bottom:4px;">`).join('')) +
     (e.description ? `<div class="tt-desc">${escHtml(e.description)}</div>` : '');
   moveTooltip(evt);
 }
@@ -1008,10 +1159,10 @@ function setupToolbar() {
       if (a === 'import')      document.getElementById('import-file').click();
       if (a === 'reset')       resetAll();
       if (a === 'connect-file') {
-        if (fileHandle) {
-          if (confirm(`${fileHandle.name} 연결을 해제하시겠습니까?`)) disconnectFile();
+        if (dirHandle) {
+          if (confirm(`${dirHandle.name}/ 폴더 연결을 해제하시겠습니까?`)) disconnectDir();
         } else {
-          connectFile();
+          connectDir();
         }
       }
       if (a === 'github') openGithubModal();
@@ -1070,7 +1221,12 @@ function openModal(title, bodyHtml, onSave, onDelete) {
   }
   saveBtn.onclick = () => { if (onSave(form) !== false) { close(); persist(); render(); } };
   cancelBtn.onclick = close;
-  delBtn.onclick = () => { if (confirm('삭제하시겠습니까?')) { onDelete(); close(); persist(); render(); } };
+  delBtn.onclick = async () => {
+    if (!confirm('삭제하시겠습니까?')) return;
+    const r = onDelete();
+    if (r && typeof r.then === 'function') await r;
+    close(); persist(); render();
+  };
 
   // 첫 입력에 포커스
   setTimeout(() => form.querySelector('input,textarea,select')?.focus(), 0);
@@ -1142,16 +1298,16 @@ function openCountryModal(id, defaultRegionId) {
 function openEntryModal(id, defaultCountryIds) {
   const e = id ? state.entries.find(x => x.id === id) : null;
 
-  // countryIds 결정: 편집이면 기존 유지, 신규이면 인자 → 없으면 첫 region의 첫 country로 fallback
-  let lockedCids;
-  if (e) {
-    lockedCids = e.countryIds;
-  } else if (defaultCountryIds && defaultCountryIds.length) {
-    lockedCids = [...defaultCountryIds];
+  // 단일 country 선택 (기존 다중 entry는 첫 번째만 유지)
+  let selectedCid = null;
+  if (e?.countryIds?.length) {
+    selectedCid = e.countryIds[0];
+  } else if (defaultCountryIds?.length) {
+    selectedCid = defaultCountryIds[0];
   } else {
     const firstR = getOrderedRegions()[0];
     const firstC = firstR ? getOrderedCountries(firstR.id)[0] : null;
-    lockedCids = firstC ? [firstC.id] : [];
+    if (firstC) selectedCid = firstC.id;
   }
 
   const html = `
@@ -1169,35 +1325,293 @@ function openEntryModal(id, defaultCountryIds) {
     <label>색상
       <input name="color" type="color" value="${e?.color || '#bfdbfe'}">
     </label>
-    <label>이미지 URL (세력 지도 등 — 링크만)
-      <input name="image" type="url" value="${escAttr(e?.image)}" placeholder="https://...">
+    <label>이미지 (여러 장 가능)
+      <div style="display:flex; gap:6px;">
+        <input name="image-text" type="text" placeholder="data/images/foo.jpg 또는 https://..." style="flex:1;">
+        <button type="button" id="add-image-text">＋ 경로 추가</button>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px; margin-top:4px;">
+        <input name="image-upload" type="file" accept="image/*" multiple style="flex:1;">
+        <span id="image-upload-status" style="font-size:11px;"></span>
+      </div>
+      <div id="images-stack" class="images-stack"></div>
     </label>
     <label>설명
       <textarea name="description">${escHtml(e?.description)}</textarea>
     </label>
+    <label>소속 지역/나라
+      <select name="country" id="country-select"></select>
+      <div id="new-country-form" hidden style="margin-top:6px; padding:8px; background: var(--bg-alt); border-radius:4px;">
+        <div class="row">
+          <label>나라 이름
+            <input name="new-country-name" type="text" placeholder="예: 베트남">
+          </label>
+          <label>지역
+            <select name="new-country-region"></select>
+          </label>
+        </div>
+        <label id="new-region-row" hidden style="margin-top:4px;">새 지역 이름
+          <input name="new-region-name" type="text" placeholder="예: 동남아시아">
+        </label>
+        <div style="margin-top:6px; display:flex; gap:6px; justify-content:flex-end;">
+          <button type="button" id="cancel-new-country">취소</button>
+          <button type="button" id="confirm-new-country" class="primary">추가</button>
+        </div>
+      </div>
+    </label>
   `;
+
+  let countryChanged = false;
+
   openModal(e ? '시기 편집' : '시기 추가', html,
     form => {
       const name = form.name.value.trim();
       const startYear = parseInt(form.start.value, 10);
       const endYear   = parseInt(form.end.value, 10);
       const color = form.color.value;
-      const image = form.image.value.trim();
       const description = form.description.value.trim();
-      const countryIds = lockedCids;
-      if (!name || isNaN(startYear) || isNaN(endYear) || countryIds.length === 0) {
-        alert('이름과 연도는 필수, 소속 나라가 1개 이상 있어야 합니다.');
+      const cid = form.country.value;
+      const stackEl = form.querySelector('#images-stack');
+      const images = [...stackEl.querySelectorAll('.image-preview')].map(d => d.dataset.path).filter(Boolean);
+      if (!name || isNaN(startYear) || isNaN(endYear) || !cid || cid === '__NEW__') {
+        alert('이름, 연도, 소속 나라는 필수입니다.');
         return false;
       }
       if (endYear <= startYear) { alert('끝 연도는 시작 연도보다 커야 합니다.'); return false; }
+      const countryIds = (e && !countryChanged) ? e.countryIds : [cid];
       if (e) {
-        Object.assign(e, { name, startYear, endYear, color, image, description, countryIds });
+        Object.assign(e, { name, startYear, endYear, color, images, description, countryIds });
       } else {
-        state.entries.push({ id: genId('e'), name, startYear, endYear, color, image, description, countryIds });
+        state.entries.push({ id: genId('e'), name, startYear, endYear, color, images, description, countryIds });
       }
     },
-    e ? () => { state.entries = state.entries.filter(x => x.id !== e.id); } : null
+    e ? async () => {
+      const filesToDelete = (e.images || []).filter(p =>
+        p && !p.startsWith('data:') && !/^https?:\/\//.test(p) && !isImageUsedByOthers(p, e.id)
+      );
+      if (filesToDelete.length > 0) {
+        if (confirm(`연결된 이미지 파일 ${filesToDelete.length}개도 함께 삭제할까요?`)) {
+          for (const p of filesToDelete) {
+            try { await deleteImageFile(p); } catch (err) { console.warn(err); }
+          }
+        }
+      }
+      state.entries = state.entries.filter(x => x.id !== e.id);
+    } : null
   );
+
+  // ---------- 폼 초기화 ----------
+  const form = document.getElementById('modal-form');
+  const select = form.querySelector('#country-select');
+  const newForm = form.querySelector('#new-country-form');
+  const cancelNew = form.querySelector('#cancel-new-country');
+  const confirmNew = form.querySelector('#confirm-new-country');
+  const newNameInput = newForm.querySelector('[name="new-country-name"]');
+  const regionSelect = newForm.querySelector('[name="new-country-region"]');
+  const newRegionRow = newForm.querySelector('#new-region-row');
+  const newRegionInput = newForm.querySelector('[name="new-region-name"]');
+
+  function rebuildCountrySelect(currentCid) {
+    let opts = '';
+    let hasAny = false;
+    for (const r of getOrderedRegions()) {
+      const cs = getOrderedCountries(r.id);
+      if (!cs.length) continue;
+      hasAny = true;
+      opts += `<optgroup label="${escAttr(r.name)}">`;
+      for (const c of cs) {
+        const sel = c.id === currentCid ? ' selected' : '';
+        opts += `<option value="${escAttr(c.id)}"${sel}>${escHtml(c.name)}</option>`;
+      }
+      opts += `</optgroup>`;
+    }
+    if (!hasAny) opts += '<option value="" disabled selected>나라가 없습니다 — 아래로 추가</option>';
+    opts += `<option value="__NEW__">＋ 새 나라/지역 추가…</option>`;
+    select.innerHTML = opts;
+  }
+
+  function rebuildRegionSelect() {
+    regionSelect.innerHTML = '<option value="">지역 선택…</option>'
+      + getOrderedRegions().map(r => `<option value="${escAttr(r.id)}">${escHtml(r.name)}</option>`).join('')
+      + '<option value="__NEW__">+ 새 지역…</option>';
+    newRegionRow.hidden = true;
+    newRegionInput.value = '';
+  }
+
+  rebuildCountrySelect(selectedCid);
+  rebuildRegionSelect();
+
+  select.addEventListener('change', () => {
+    if (select.value === '__NEW__') {
+      newForm.hidden = false;
+      rebuildCountrySelect(selectedCid); // 이전 선택으로 되돌림
+      setTimeout(() => newNameInput.focus(), 0);
+    } else {
+      selectedCid = select.value;
+      countryChanged = true;
+    }
+  });
+
+  cancelNew.addEventListener('click', () => {
+    newForm.hidden = true;
+    newNameInput.value = '';
+    rebuildRegionSelect();
+  });
+  regionSelect.addEventListener('change', () => {
+    newRegionRow.hidden = regionSelect.value !== '__NEW__';
+    if (!newRegionRow.hidden) setTimeout(() => newRegionInput.focus(), 0);
+  });
+  confirmNew.addEventListener('click', () => {
+    const cname = newNameInput.value.trim();
+    let rid = regionSelect.value;
+    if (!cname) { alert('나라 이름이 필요합니다.'); return; }
+    if (!rid)   { alert('지역을 선택하거나 새로 만드세요.'); return; }
+    if (rid === '__NEW__') {
+      const rname = newRegionInput.value.trim();
+      if (!rname) { alert('새 지역 이름이 필요합니다.'); return; }
+      const newRegion = { id: genId('r'), name: rname };
+      state.regions.push(newRegion);
+      rid = newRegion.id;
+    }
+    const newCountry = { id: genId('c'), name: cname, regionId: rid };
+    state.countries.push(newCountry);
+    selectedCid = newCountry.id;
+    countryChanged = true;
+    reconcileViewOrder();
+    persist();
+    render();
+
+    newNameInput.value = '';
+    newForm.hidden = true;
+    rebuildRegionSelect();
+    rebuildCountrySelect(selectedCid);
+  });
+
+  // 다중 이미지 미리보기 스택 (각 카드: 줌/팬/휴지통)
+  const stackEl = form.querySelector('#images-stack');
+  const textInput = form.querySelector('[name="image-text"]');
+  const addTextBtn = form.querySelector('#add-image-text');
+  const uploader = form.querySelector('[name="image-upload"]');
+  const status = form.querySelector('#image-upload-status');
+
+  function setStatus(text, kind) {
+    status.textContent = text;
+    status.style.color = kind === 'err' ? 'var(--danger)' : kind === 'ok' ? 'var(--accent)' : 'var(--muted)';
+  }
+
+  function createImagePreview(path) {
+    const div = document.createElement('div');
+    div.className = 'image-preview';
+    div.dataset.path = path;
+    div.innerHTML = `
+      <button type="button" class="trash" title="이 이미지 제거">🗑</button>
+      <img src="${escAttr(resolveImage(path))}" alt="" draggable="false"
+           onerror="this.style.opacity=0.2" onload="this.style.opacity=1">
+      <div class="preview-tools">
+        <button type="button" data-zoom="out" title="축소">−</button>
+        <button type="button" data-zoom="reset" title="원본 (또는 더블클릭)">⟳</button>
+        <button type="button" data-zoom="in" title="확대">+</button>
+      </div>
+      <span class="resize-hint">↘ 영역 크기조절 / 휠: 줌 / 드래그: 이동</span>
+    `;
+    const img = div.querySelector('img');
+    let scale = 1, panX = 0, panY = 0, dragStartPan = null;
+    function applyTransform() { img.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`; }
+    function resetZoom() { scale = 1; panX = 0; panY = 0; applyTransform(); }
+    function zoomAt(cx, cy, factor) {
+      const newScale = Math.max(0.1, Math.min(30, scale * factor));
+      const ratio = newScale / scale;
+      panX = cx - ratio * (cx - panX);
+      panY = cy - ratio * (cy - panY);
+      scale = newScale;
+      applyTransform();
+    }
+    div.addEventListener('wheel', (ev) => {
+      ev.preventDefault();
+      const rect = div.getBoundingClientRect();
+      zoomAt(ev.clientX - rect.left, ev.clientY - rect.top, ev.deltaY < 0 ? 1.15 : 1/1.15);
+    }, { passive: false });
+    img.addEventListener('mousedown', (ev) => {
+      if (ev.button !== 0) return;
+      ev.preventDefault();
+      dragStartPan = { x: ev.clientX, y: ev.clientY, panX, panY };
+      div.classList.add('dragging');
+    });
+    div._onDrag = (ev) => {
+      if (!dragStartPan) return;
+      panX = dragStartPan.panX + (ev.clientX - dragStartPan.x);
+      panY = dragStartPan.panY + (ev.clientY - dragStartPan.y);
+      applyTransform();
+    };
+    div._onDragEnd = () => { dragStartPan = null; };
+    div.addEventListener('dblclick', (ev) => {
+      if (ev.target.closest('.preview-tools, .trash')) return;
+      resetZoom();
+    });
+    div.querySelector('[data-zoom="in"]').addEventListener('click', () => {
+      const r = div.getBoundingClientRect(); zoomAt(r.width/2, r.height/2, 1.25);
+    });
+    div.querySelector('[data-zoom="out"]').addEventListener('click', () => {
+      const r = div.getBoundingClientRect(); zoomAt(r.width/2, r.height/2, 1/1.25);
+    });
+    div.querySelector('[data-zoom="reset"]').addEventListener('click', resetZoom);
+    div.querySelector('.trash').addEventListener('click', async () => {
+      const p = div.dataset.path;
+      if (!confirm('이 이미지를 제거할까요?\n(파일도 같이 삭제됩니다)')) return;
+      const isFile = p && !p.startsWith('data:') && !/^https?:\/\//.test(p);
+      if (isFile && !isImageUsedByOthers(p, e?.id)) {
+        try { await deleteImageFile(p); } catch (err) { console.warn(err); }
+      }
+      div.remove();
+    });
+    return div;
+  }
+
+  function appendPreviewAndScroll(path) {
+    const el = createImagePreview(path);
+    stackEl.appendChild(el);
+    setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 30);
+  }
+
+  // 초기 이미지들 렌더
+  for (const p of (e?.images || [])) stackEl.appendChild(createImagePreview(p));
+
+  // 경로 텍스트 추가
+  addTextBtn.addEventListener('click', () => {
+    const v = textInput.value.trim();
+    if (!v) { textInput.focus(); textInput.placeholder = '경로를 먼저 입력하세요'; return; }
+    appendPreviewAndScroll(v);
+    textInput.value = '';
+  });
+  textInput.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') { ev.preventDefault(); addTextBtn.click(); }
+  });
+
+  // 파일 업로드 (여러 장 가능)
+  uploader?.addEventListener('change', async () => {
+    const files = [...(uploader.files || [])];
+    if (!files.length) return;
+    if (!dirHandle && !githubConfig) {
+      setStatus('✗ 먼저 📁 폴더 연결 또는 📤 GitHub 연결 필요', 'err');
+      uploader.value = '';
+      return;
+    }
+    setStatus(`업로드 중… (0/${files.length})`, 'info');
+    let done = 0;
+    for (const f of files) {
+      try {
+        const path = await uploadImage(f);
+        appendPreviewAndScroll(path);
+        done++;
+        setStatus(`업로드 중… (${done}/${files.length})`, 'info');
+      } catch (err) {
+        setStatus('✗ ' + (err.message || err), 'err');
+        break;
+      }
+    }
+    if (done === files.length) setStatus(`✓ ${done}개 추가됨`, 'ok');
+    uploader.value = '';
+  });
 }
 
 // ============================================================
@@ -1315,7 +1729,23 @@ function setupDragAndDrop() {
   });
 }
 
+// 이미지 미리보기 카드들의 드래그 팬을 위한 전역 디스패처 (한 번만 설정)
+function setupImagePreviewGlobal() {
+  document.addEventListener('mousemove', (e) => {
+    document.querySelectorAll('.image-preview.dragging').forEach(div => {
+      if (div._onDrag) div._onDrag(e);
+    });
+  });
+  document.addEventListener('mouseup', () => {
+    document.querySelectorAll('.image-preview.dragging').forEach(div => {
+      if (div._onDragEnd) div._onDragEnd();
+      div.classList.remove('dragging');
+    });
+  });
+}
+
 async function init() {
+  await restoreDirHandle();          // 폴더 연결 먼저 복원 → loadInitial이 그 폴더 우선 사용
   const source = await loadInitial();
   loadRuntime();
   reconcileViewOrder();
@@ -1324,7 +1754,7 @@ async function init() {
   setupEventTrack();
   setupRangeAndZoom();
   setupDragAndDrop();
-  await restoreFileHandle();
+  setupImagePreviewGlobal();
   loadGithubConfig();
   render();
   if (source === 'cache') {

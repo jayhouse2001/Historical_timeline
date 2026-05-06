@@ -1,0 +1,452 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<timeline start="-3500" end="2900">
+
+  <regions>
+    <region id="r_1" name="아시아"/>
+    <region id="r_2" name="중앙아시아"/>
+    <region id="r_3" name="서아시아 (중동/근동)"/>
+    <region id="r_4" name="유럽"/>
+    <region id="r_5" name="아프리카"/>
+    <region id="r_6" name="북아메리카"/>
+    <region id="r_7" name="남아메리카"/>
+    <region id="r_8" name="동남아시아"/>
+    <region id="r_9" name="남아시아"/>
+  </regions>
+
+  <countries>
+    <country id="c_1" region="r_1" name="한국"/>
+    <country id="c_2" region="r_1" name="한국 (2)"/>
+    <country id="c_3" region="r_1" name="한국 (3)"/>
+    <country id="c_4" region="r_1" name="한국 (4)"/>
+    <country id="c_5" region="r_1" name="일본"/>
+    <country id="c_6" region="r_1" name="중국"/>
+    <country id="c_7" region="r_2" name="몽골"/>
+    <country id="c_8" region="r_2" name="몽골 (2)"/>
+    <country id="c_9" region="r_2" name="스키타이"/>
+    <country id="c_10" region="r_3" name="아나톨리아 (튀르키예)"/>
+    <country id="c_11" region="r_3" name="메소포타미아 (시리아?) (이라크)"/>
+    <country id="c_12" region="r_3" name="메소포타미아 (시리아?) (이라크) (2)"/>
+    <country id="c_13" region="r_3" name="이집트"/>
+    <country id="c_14" region="r_4" name="그리스"/>
+    <country id="c_15" region="r_4" name="로마"/>
+    <country id="c_16" region="r_4" name="로마 (2)"/>
+    <country id="c_17" region="r_4" name="로마 (3)"/>
+    <country id="c_18" region="r_4" name="독일"/>
+    <country id="c_19" region="r_4" name="프랑스"/>
+    <country id="c_20" region="r_4" name="영국"/>
+    <country id="c_21" region="r_8" name="베트남"/>
+    <country id="c_22" region="r_9" name="인도"/>
+  </countries>
+
+  <entries>
+    <entry id="e_1" name="부여 (BC 4세기 ~ 494)" start="-400" end="494" countries="c_1" color="#fde68a">
+      <description>옥저(BC 2세기 ~ 5세기) 고구려 병합</description>
+    </entry>
+    <entry id="e_2" name="발해 (692 ~ 926)" start="692" end="926" countries="c_1" color="#a7f3d0">
+      <description>대조영(한반도 북부, 연해주), 멸망 by 거란(요나라)</description>
+    </entry>
+    <entry id="e_3" name="고조선(BC 5세기  ~ 194)" start="-500" end="-194" countries="c_2 c_3 c_4" color="#bfdbfe">
+      <description>단군 왕검</description>
+    </entry>
+    <entry id="e_4" name="위만 조선 (BC 194 ~ BC 108)" start="-194" end="-108" countries="c_2 c_3 c_4" color="#fbcfe8">
+      <description>진국(BC 3 ~ BC 2세기)</description>
+    </entry>
+    <entry id="e_5" name="고구려(37 ~ 668)" start="37" end="668" countries="c_2" color="#ddd6fe">
+      <description>동명성왕(졸본)</description>
+    </entry>
+    <entry id="e_6" name="통일 신라 (~ 935)" start="668" end="900" countries="c_2 c_3 c_4" color="#fed7aa"/>
+    <entry id="e_7" name="후고구려(태봉)" start="901" end="918" countries="c_2" color="#fecaca">
+      <description>(901 ~ 918)
+궁예</description>
+    </entry>
+    <entry id="e_8" name="고려 (918 ~ 1392)" start="918" end="1392" countries="c_2 c_3 c_4" color="#bae6fd">
+      <description>왕건</description>
+    </entry>
+    <entry id="e_9" name="조선  (1392 ~ 1897)" start="1392" end="1897" countries="c_2 c_3 c_4" color="#bbf7d0">
+      <description>이성계</description>
+    </entry>
+    <entry id="e_10" name="대한제국" start="1898" end="1909" countries="c_2 c_3 c_4" color="#e9d5ff">
+      <description>(1898 ~ 1909)
+고종</description>
+    </entry>
+    <entry id="e_11" name="일제강점기" start="1910" end="1945" countries="c_2 c_3 c_4" color="#fde68a">
+      <description>(1910 ~ 
+1945)</description>
+    </entry>
+    <entry id="e_12" name="대한민국 (1945 ~ )" start="1945" end="2050" countries="c_2 c_3 c_4" color="#a7f3d0"/>
+    <entry id="e_13" name="백제(18 ~ 660)" start="18" end="660" countries="c_3" color="#bfdbfe">
+      <description>온조왕(위례성)</description>
+    </entry>
+    <entry id="e_14" name="후백제" start="892" end="936" countries="c_3" color="#fbcfe8">
+      <description>(892 ~ 936)
+견훤</description>
+    </entry>
+    <entry id="e_15" name="신라(57 ~), 가야(1세기 ~ 562)" start="0" end="562" countries="c_4" color="#ddd6fe">
+      <description>혁거세(경주) , 김수로왕</description>
+    </entry>
+    <entry id="e_16" name="야요이" start="-1500" end="-1400" countries="c_5" color="#fed7aa"/>
+    <entry id="e_17" name="야마토" start="-500" end="-400" countries="c_5" color="#fecaca"/>
+    <entry id="e_18" name="헤이안" start="500" end="581" countries="c_5" color="#bae6fd"/>
+    <entry id="e_19" name="무로마치" start="1000" end="1100" countries="c_5" color="#bbf7d0"/>
+    <entry id="e_20" name="도쿠가와" start="1500" end="1600" countries="c_5" color="#e9d5ff"/>
+    <entry id="e_21" name="일본국" start="2000" end="2050" countries="c_5" color="#fde68a"/>
+    <entry id="e_22" name="하 왕조" start="-2000" end="-600" countries="c_6" color="#a7f3d0">
+      <description>(BC 2000년 경 ~ 600년 경)</description>
+    </entry>
+    <entry id="e_23" name="은(상) 왕조" start="-1600" end="-1046" countries="c_6" color="#bfdbfe">
+      <description>(BC 1600년 경 ~ 1046)</description>
+    </entry>
+    <entry id="e_24" name="주 왕조" start="-1046" end="-770" countries="c_6" color="#fbcfe8">
+      <description>(BC 1046 ~ 770)
+주 무왕</description>
+    </entry>
+    <entry id="e_25" name="춘추전국 시대" start="-770" end="-221" countries="c_6" color="#ddd6fe">
+      <description>(BC 770 ~ 221)
+(진, 조, 위, 한, 초, 연, 노, 제)
+제자백가 출현, 
+유가 : 공자(551 ~ 479) , 맹자, 순자
+도가 : 노자(태상노군), 장자
+법가 : 한비자
+묵가 : 묵자</description>
+    </entry>
+    <entry id="e_26" name="진" start="-221" end="-206" countries="c_6" color="#fed7aa">
+      <description>(BC 221 
+~ 
+206)
+진시황</description>
+    </entry>
+    <entry id="e_27" name="전한" start="-202" end="8" countries="c_6" color="#fecaca">
+      <description>(BC 202 ~ AD 8)
+태조 유방 -&gt; 항우
+
+BC 139, 장건의 서역 원정</description>
+    </entry>
+    <entry id="e_28" name="신" start="8" end="25" countries="c_6" color="#bae6fd">
+      <description>(8 
+~ 
+25)</description>
+    </entry>
+    <entry id="e_29" name="후한" start="25" end="220" countries="c_6" color="#bbf7d0">
+      <description>(25 ~ 220)
+
+황건의 난
+(184)
+군웅할거의 시대</description>
+    </entry>
+    <entry id="e_30" name="서진" start="280" end="316" countries="c_6" color="#e9d5ff">
+      <description>(280 ~ 316)
+사마염
+(사마의 손자)</description>
+    </entry>
+    <entry id="e_31" name="5호 16국" start="304" end="439" countries="c_6" color="#fde68a">
+      <description>(304 ~ 439)
+흉노: 전조,  하
+선비 : 전연, 후연, 서연, 남연, 북위
+갈: 흉노의 갈래(후조), 저 , 강:티벳</description>
+    </entry>
+    <entry id="e_32" name="북위 -&gt; 북주,북제" start="439" end="539" countries="c_6" color="#a7f3d0">
+      <description>(439 ~ 539)  -&gt;  ( ~ 581)</description>
+    </entry>
+    <entry id="e_33" name="수" start="581" end="618" countries="c_6" color="#bfdbfe">
+      <description>(581
+~
+618)
+선비족 
+후예</description>
+    </entry>
+    <entry id="e_34" name="당" start="618" end="907" countries="c_6" color="#fbcfe8">
+      <description>(618 ~ 907)
+
+이세민 당태종
+(626 ~ 649)
+
+현장 스님(삼장법사)
+(602 ~ 664)
+660 : 백제 황산벌 전투
+668 : 평양성 함락
+751 : 탈라스 전투(vs 아바스 왕조) 패</description>
+    </entry>
+    <entry id="e_35" name="5대 10국" start="907" end="960" countries="c_6" color="#ddd6fe">
+      <description>(907 ~ 960)
+
+후량, 후당, 후진,
+ 후한, 후주</description>
+    </entry>
+    <entry id="e_36" name="북송" start="960" end="1127" countries="c_6" color="#fed7aa">
+      <description>(960 ~ 1127)</description>
+    </entry>
+    <entry id="e_37" name="남송" start="1127" end="1279" countries="c_6" color="#fecaca">
+      <description>(1127 ~ 1279)</description>
+    </entry>
+    <entry id="e_38" name="원" start="1271" end="1368" countries="c_6" color="#bae6fd">
+      <description>(1271 ~ 1368)</description>
+    </entry>
+    <entry id="e_39" name="명" start="1368" end="1644" countries="c_6" color="#bbf7d0">
+      <description>(1368 ~ 1644)</description>
+    </entry>
+    <entry id="e_40" name="청" start="1636" end="1912" countries="c_6" color="#e9d5ff">
+      <description>(1636 ~ 1912))</description>
+    </entry>
+    <entry id="e_41" name="중화민국" start="1912" end="1928" countries="c_6" color="#fde68a">
+      <description>(1912 
+~
+1928)</description>
+    </entry>
+    <entry id="e_42" name="국민당 정부" start="1928" end="1949" countries="c_6" color="#a7f3d0">
+      <description>(1928 ~ 1949)</description>
+    </entry>
+    <entry id="e_43" name="중화인민공화국" start="2000" end="2050" countries="c_6" color="#bfdbfe"/>
+    <entry id="e_44" name="흉노" start="-400" end="48" countries="c_7 c_8" color="#fbcfe8">
+      <description>(BC 4세기 ?  ~ AD 48)
+BC 57년에 동서 분열 후 BC 53년 서흉노 소멸 후 동흉노만 남음</description>
+    </entry>
+    <entry id="e_45" name="남 흉노" start="49" end="400" countries="c_7" color="#ddd6fe">
+      <description>(49 ~ 5 세기)</description>
+    </entry>
+    <entry id="e_46" name="돌궐" start="500" end="581" countries="c_7" color="#fed7aa"/>
+    <entry id="e_47" name="동돌궐  멸망 by 위구르" start="581" end="750" countries="c_7" color="#fecaca"/>
+    <entry id="e_48" name="위구르" start="744" end="840" countries="c_7" color="#bae6fd">
+      <description>(744 ~ 840)</description>
+    </entry>
+    <entry id="e_49" name="거란(요)" start="907" end="1125" countries="c_7 c_8" color="#bbf7d0">
+      <description>(907 ~ 1125)
+멸망 by 금</description>
+    </entry>
+    <entry id="e_50" name="여진(금)" start="1115" end="1234" countries="c_7 c_8" color="#e9d5ff">
+      <description>(1115 ~ 1234)
+멸망 by 몽골</description>
+    </entry>
+    <entry id="e_51" name="몽골" start="1243" end="1368" countries="c_7 c_8 c_9" color="#fde68a"/>
+    <entry id="e_52" name="몽골" start="1500" end="1600" countries="c_7" color="#a7f3d0"/>
+    <entry id="e_53" name="몽골국" start="2000" end="2050" countries="c_7" color="#bfdbfe"/>
+    <entry id="e_54" name="선비" start="100" end="400" countries="c_8" color="#fbcfe8"/>
+    <entry id="e_55" name="서돌궐 멸망 by 내분" start="581" end="750" countries="c_8" color="#ddd6fe"/>
+    <entry id="e_56" name="후 몽골" start="1500" end="1600" countries="c_8" color="#fed7aa"/>
+    <entry id="e_57" name="몽골국" start="2000" end="2050" countries="c_8" color="#fecaca"/>
+    <entry id="e_58" name="스키타이" start="-800" end="-300" countries="c_9" color="#bae6fd">
+      <description>(BC 8세기 ~ BC 3 세기)</description>
+    </entry>
+    <entry id="e_59" name="북 흉노 -&gt; 훈족" start="49" end="375" countries="c_9" color="#bbf7d0">
+      <description>(49 ~ 375 ?)
+서쪽으로 이동, 375년 훈족의 유럽 공격</description>
+    </entry>
+    <entry id="e_60" name="히타이트 제국(1600 ~ 1180)" start="-1600" end="-1178" countries="c_10" color="#e9d5ff">
+      <description>멸망 by 바다민족(?)</description>
+      <image>data/images/motn0th0_hittites.png</image>
+    </entry>
+    <entry id="e_61" name="신히타이트" start="-1200" end="-700" countries="c_10" color="#fde68a">
+      <description>(12세기 ~ 8세기)
+신아시리아에 멸망</description>
+    </entry>
+    <entry id="e_62" name="페르시아 제국," start="-550" end="-330" countries="c_10 c_11 c_12 c_13" color="#a7f3d0">
+      <description>아케메네스 왕조 
+(BC 550 ~ 330)
+키루스2세
+
+BC 514, 다리우스 1세
+스키타이 원정(실패)
+
+BC 490 다리우스 1세
+마라톤 전투(vs 그리스)
+
+BC 480, 크세르크세스
+테르모필레, 
+살라미스 해전(vs 그리스)
+영화 300</description>
+    </entry>
+    <entry id="e_63" name="알렉산드로스" start="-334" end="-323" countries="c_10 c_11 c_12 c_13 c_14" color="#bfdbfe">
+      <description>제국
+(334 ~ 323)
+알렉산드로스 
+3세
+
+스승 아리스토텔레스</description>
+    </entry>
+    <entry id="e_64" name="셀주크 투르크" start="1037" end="1194" countries="c_10 c_11 c_12" color="#fbcfe8">
+      <description>(1037 ~ 1194)
+
+아바스 왕조 존속
+멸망 by 호라즘 샤</description>
+    </entry>
+    <entry id="e_65" name="롬 술탄국" start="1077" end="1308" countries="c_10" color="#ddd6fe">
+      <description>(1077 ~ 1308)</description>
+    </entry>
+    <entry id="e_66" name="오스만 투르크" start="1299" end="1922" countries="c_10 c_11" color="#fed7aa">
+      <description>(1299 ~ 1922)</description>
+    </entry>
+    <entry id="e_67" name="이라크 왕국" start="2000" end="2050" countries="c_10" color="#fecaca"/>
+    <entry id="e_68" name="고대 아시리아 (20세기 ~ 15세기)" start="-2000" end="-1500" countries="c_11" color="#bae6fd">
+      <description>메소포타미아 북부(티그리스강 중상류, 바빌론과 국경)</description>
+    </entry>
+    <entry id="e_69" name="중기 아시리아(14 ~ 10세기)" start="14" end="900" countries="c_11" color="#bbf7d0">
+      <description>12세기 바다민족 공격 막아냄</description>
+    </entry>
+    <entry id="e_70" name="신아시리아 (934 ~ 609)" start="-934" end="-609" countries="c_11" color="#e9d5ff">
+      <description>아슈르바니팔 (685~631)
+중동전역 최초 통일
+신바빌로니아 연합에 멸망</description>
+    </entry>
+    <entry id="e_71" name="셀레우코스 제국" start="-312" end="-63" countries="c_11" color="#fde68a">
+      <description>(312 ~ 63)
+로마에게 멸망</description>
+    </entry>
+    <entry id="e_72" name="사산왕조 페르시아" start="224" end="651" countries="c_11 c_12" color="#a7f3d0">
+      <description>(224 ~ 651)
+이슬람 제국에게 멸망</description>
+    </entry>
+    <entry id="e_73" name="정통" start="632" end="661" countries="c_11 c_12 c_13" color="#bfdbfe">
+      <description>칼리파
+시대
+(632 
+~
+661)</description>
+    </entry>
+    <entry id="e_74" name="우마이야" start="661" end="750" countries="c_11 c_12 c_13" color="#fbcfe8">
+      <description>왕조
+(661 ~ 750)</description>
+    </entry>
+    <entry id="e_75" name="아바스 왕조" start="750" end="1258" countries="c_11 c_12 c_13" color="#ddd6fe">
+      <description>(750 ~ 1258)</description>
+    </entry>
+    <entry id="e_76" name="호라즘 샤" start="1077" end="1231" countries="c_11 c_12" color="#fed7aa">
+      <description>(1077 ~ 1231)</description>
+    </entry>
+    <entry id="e_77" name="몽골" start="1243" end="1368" countries="c_11 c_12" color="#fecaca">
+      <description>(일 칸국)</description>
+    </entry>
+    <entry id="e_78" name="티무르 제국" start="1370" end="1507" countries="c_11 c_12" color="#bae6fd">
+      <description>(1370~ 1507)</description>
+    </entry>
+    <entry id="e_79" name="수메르 문명 시작" start="-2900" end="-2500" countries="c_12" color="#bbf7d0">
+      <description>BC2900 ~
+아카드 제국 등
+우르크(2800 ~ 2500), 길가메시 왕</description>
+    </entry>
+    <entry id="e_80" name="바빌론 제국(1895 ~ 1595)" start="-1895" end="-1595" countries="c_12" color="#e9d5ff">
+      <description>6대 함무라비
+(BC 1792 ~ 1750)
+멸망 by 히타이트</description>
+    </entry>
+    <entry id="e_81" name="중기 바빌로니아" start="-1595" end="-626" countries="c_12" color="#fde68a">
+      <description>(1595 ~ 626)
+카시트 왕조, 1225년경 아시라아에 300년간 지배됨</description>
+    </entry>
+    <entry id="e_82" name="신바빌로니아" start="-626" end="-539" countries="c_12" color="#a7f3d0">
+      <description>(626 ~ 539)
+페르시아에 멸망</description>
+    </entry>
+    <entry id="e_83" name="파르티아" start="-224" end="247" countries="c_12" color="#bfdbfe">
+      <description>(BC 224 ~ 247)
+사산조 페르시아에 멸망
+박트리아 (BC 256 ~ BC 120), 월지에 멸망</description>
+    </entry>
+    <entry id="e_84" name="페르시아" start="1501" end="1925" countries="c_12" color="#fbcfe8">
+      <description>(1501 ~ 1925)
+사파비 왕조(~ 1736)</description>
+    </entry>
+    <entry id="e_85" name="고왕국" start="-2686" end="-2181" countries="c_13" color="#ddd6fe">
+      <description>(BC 2686 ~ 2181)
+피라미드 시대
+(쿠푸, 카프레(스핑크스), 
+멘카우레)</description>
+    </entry>
+    <entry id="e_86" name="제 1 중간기" start="-2181" end="-2055" countries="c_13" color="#fed7aa">
+      <description>(BC 2181 ~ 2055)</description>
+    </entry>
+    <entry id="e_87" name="중왕국" start="-2055" end="-1650" countries="c_13" color="#fecaca">
+      <description>(BC 2055 ~ 1650)
+힉소스인 침입 (1650)</description>
+    </entry>
+    <entry id="e_88" name="제 2 중간기" start="-1650" end="-1550" countries="c_13" color="#bae6fd">
+      <description>(BC 1650 ~1550)</description>
+    </entry>
+    <entry id="e_89" name="신왕국" start="-1550" end="-1077" countries="c_13" color="#bbf7d0">
+      <description>(BC 1550 ~ 1077)
+투탕카멘 (1332 ~ 1323)
+람세스2세(1279 ~ 1213) 
+(람세스2세) 카데시 전투(vs 히타이트) 1275</description>
+    </entry>
+    <entry id="e_90" name="제 3 중간기" start="-1077" end="-525" countries="c_13" color="#e9d5ff">
+      <description>(BC 1077 ~ 525)
+BC 666 아시리아에 패배(아시리아 아슈르바니팔 2세)
+이집트는 계속 청동기</description>
+    </entry>
+    <entry id="e_91" name="프톨레마이오스 왕조(BC 305 ~ 30)" start="-305" end="-30" countries="c_13" color="#fde68a">
+      <description>클레오파트라 7세
+프톨레마이오스 13, 14세(남편이자 동생들)
+프톨레마이오스 15 = 카이사르온
+(카이사르와 클레오파트라 아들)</description>
+    </entry>
+    <entry id="e_92" name="로마 지배" start="-30" end="641" countries="c_13" color="#a7f3d0">
+      <description>(BC 30 ~ 641)</description>
+    </entry>
+    <entry id="e_93" name="파티마 왕조" start="909" end="1171" countries="c_13" color="#bfdbfe">
+      <description>(909 ~ 1171)
+멸망 by 살라딘</description>
+    </entry>
+    <entry id="e_94" name="아이유브 왕조" start="1171" end="1250" countries="c_13" color="#fbcfe8">
+      <description>(1171 ~ 1250)
+멸망 by 맘루크</description>
+    </entry>
+    <entry id="e_95" name="맘루크 투르크" start="1250" end="1517" countries="c_13" color="#ddd6fe">
+      <description>(1250 ~ 1517)</description>
+    </entry>
+    <entry id="e_96" name="오스만/이집트" start="2000" end="2050" countries="c_13" color="#fed7aa"/>
+    <entry id="e_97" name="미케네/미노아 문명" start="-2000" end="-1200" countries="c_14" color="#fecaca">
+      <description>(에게 문명) BC 1250 트로이 전쟁</description>
+    </entry>
+    <entry id="e_98" name="바다민족 칩입" start="-1200" end="-1100" countries="c_14" color="#bae6fd">
+      <description>철기시대 가속</description>
+    </entry>
+    <entry id="e_99" name="암흑기" start="-1100" end="-700" countries="c_14" color="#bbf7d0">
+      <description>(11세기 ~ 8세기)</description>
+    </entry>
+    <entry id="e_100" name="스파르타(10 세기 ~ ), 아테네 시작(8세기 ~ )" start="-800" end="-334" countries="c_14" color="#e9d5ff">
+      <description>아테네 338 펠레폰네소스 전쟁 패배
+스파르타 330 알렉산드로스에 멸망</description>
+    </entry>
+    <entry id="e_101" name="로마 왕정 (6세기 ~ )" start="-600" end="-400" countries="c_15 c_16 c_17" color="#fde68a"/>
+    <entry id="e_102" name="로마 공화정" start="-509" end="27" countries="c_15 c_16 c_17" color="#a7f3d0">
+      <description>(BC 509 ~ AD 27)
+카이사르(BC100 ~ BC44)</description>
+    </entry>
+    <entry id="e_103" name="로마 제정" start="27" end="400" countries="c_15 c_16 c_17" color="#bfdbfe">
+      <description>AD 79, 베수비오 화산 폭발
+ 395 테오도시우스 1세 사망 후 동/서 분리</description>
+    </entry>
+    <entry id="e_104" name="동로마 제국(비잔티움 제국)" start="395" end="1453" countries="c_15 c_16" color="#fbcfe8">
+      <description>(395 ~ 1453)</description>
+    </entry>
+    <entry id="e_105" name="이탈리아" start="2000" end="2050" countries="c_15" color="#ddd6fe"/>
+    <entry id="e_106" name="서로마 제국" start="395" end="476" countries="c_17" color="#fed7aa">
+      <description>(395 ~ 476)</description>
+    </entry>
+    <entry id="e_107" name="신성 로마 제국" start="962" end="1806" countries="c_17" color="#fecaca">
+      <description>(962 ~ 1806)</description>
+    </entry>
+    <entry id="e_108" name="갈리아" start="-1500" end="-1400" countries="c_19" color="#bae6fd"/>
+    <entry id="e_109" name="갈리아" start="-500" end="-400" countries="c_19" color="#bbf7d0"/>
+    <entry id="e_110" name="로마 속주" start="0" end="8" countries="c_19" color="#e9d5ff"/>
+    <entry id="e_111" name="프랑크 왕국" start="500" end="581" countries="c_19" color="#fde68a"/>
+    <entry id="e_112" name="카페 왕조" start="1000" end="1100" countries="c_19" color="#a7f3d0"/>
+    <entry id="e_113" name="발루아" start="1500" end="1600" countries="c_19" color="#bfdbfe"/>
+    <entry id="e_114" name="부르봉" start="1945" end="2000" countries="c_19" color="#fbcfe8"/>
+    <entry id="e_115" name="프랑스 공화국" start="2000" end="2050" countries="c_19" color="#ddd6fe"/>
+  </entries>
+
+  <events>
+    <event id="ev_1" year="-3500" name="청동기"/>
+    <event id="ev_2" year="-1500" name="청동기 -&gt; 철기"/>
+    <event id="ev_3" year="1096" name="1차 십자국"/>
+    <event id="ev_4" year="1189" name="3차 십자군"/>
+    <event id="ev_5" year="1347" name="흑사병 유행"/>
+    <event id="ev_6" year="1618" name="30년 전쟁in 신성로마제국"/>
+    <event id="ev_7" year="1914" name="1차 세계대전"/>
+    <event id="ev_8" year="1939" name="2차 세계대전"/>
+    <event id="ev_9" year="1337" name="백년 전쟁(영국 vs 프랑스)"/>
+    <event id="ev_10" year="-1500" name="13~12세기 바다민족 활동"/>
+    <event id="ev_11" year="-500" name="페르시아 영토"/>
+    <event id="ev_12" year="-334" name="알렉산드로스 제국 영토"/>
+  </events>
+
+</timeline>

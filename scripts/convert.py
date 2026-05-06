@@ -126,6 +126,11 @@ def parse_period(name, fb_start, fb_end):
                 else:
                     ey = rv
         if ey is not None:
+            # BC 휴리스틱: 둘 다 양수이고 시작 > 끝이면 BC로 재해석
+            # (예: "1600 ~ 1180" → BC 1600 ~ BC 1180, "12세기 ~ 8세기" → BC 12세기 ~ BC 8세기)
+            if sy > 0 and ey > 0 and sy > ey:
+                sy = parse_year_token('BC ' + left)  if '세기' in left  else -sy
+                ey = parse_year_token('BC ' + right) if '세기' in right else -ey
             if ey < sy: ey = sy + 50
             return sy, ey
     return fb_start, fb_end
@@ -234,8 +239,10 @@ for ev in events:
 out.append('  </events>'); out.append('')
 out.append('</timeline>')
 
-(ROOT / 'data.xml').write_text('\n'.join(out), encoding='utf-8')
+data_dir = ROOT / 'data'
+data_dir.mkdir(exist_ok=True)
+(data_dir / 'data.xml').write_text('\n'.join(out), encoding='utf-8')
 
 print(f"regions={len(region_defs)} countries={len(country_defs)} entries={len(entries)} events={len(events)}")
 print(f"timeline range: {start_year} ~ {end_year}")
-print(f"-> {ROOT / 'data.xml'}")
+print(f"-> {data_dir / 'data.xml'}")
