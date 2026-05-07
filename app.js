@@ -454,7 +454,7 @@ function openGithubModal() {
 function defaultState() {
   return {
     config: { startYear: -3000, endYear: 2100, pixelsPerYear: 1.0, zoom: 1.0, indicatorYear: 0 },
-    regions: [], countries: [], entries: [], events: []
+    regions: [], countries: [], entries: [], events: [], eventTracks: [{ id: 'evt_default', name: '' }]
   };
 }
 
@@ -514,16 +514,28 @@ function parseXml(text) {
     description: el.querySelector('description')?.textContent?.trim() || '',
     images: [...el.querySelectorAll('image')].map(im => im.textContent?.trim()).filter(Boolean)
   }));
-  const events = [...doc.querySelectorAll('events > event')].map(el => ({
+  let eventTracks = [...doc.querySelectorAll('eventTracks > eventTrack')].map(el => ({
     id: el.getAttribute('id'),
-    year: parseInt(el.getAttribute('year'), 10),
-    name: el.getAttribute('name') || '',
-    description: el.querySelector('description')?.textContent?.trim() || ''
+    name: el.getAttribute('name') || ''
   }));
+  if (!eventTracks.length) eventTracks = [{ id: 'evt_default', name: '' }];
+
+  const events = [...doc.querySelectorAll('events > event')].map(el => {
+    const endAttr = el.getAttribute('end');
+    const trackAttr = el.getAttribute('track');
+    return {
+      id: el.getAttribute('id'),
+      trackId: trackAttr && eventTracks.some(t => t.id === trackAttr) ? trackAttr : eventTracks[0].id,
+      year: parseInt(el.getAttribute('year'), 10),
+      endYear: endAttr != null && endAttr !== '' ? parseInt(endAttr, 10) : null,
+      name: el.getAttribute('name') || '',
+      description: el.querySelector('description')?.textContent?.trim() || ''
+    };
+  });
 
   return {
     config: { startYear, endYear, pixelsPerYear: 1.0, zoom: state?.config?.zoom ?? 1.0, indicatorYear: state?.config?.indicatorYear ?? 0 },
-    regions, countries, entries, events
+    regions, countries, entries, events, eventTracks
   };
 }
 
@@ -562,9 +574,24 @@ function serializeXml(s) {
   }
   out += '  </entries>\n\n';
 
+  out += '  <eventTracks>\n';
+  for (const t of (s.eventTracks || [])) {
+    out += `    <eventTrack id="${escXml(t.id)}"${t.name ? ` name="${escXml(t.name)}"` : ''}/>\n`;
+  }
+  out += '  </eventTracks>\n\n';
+
   out += '  <events>\n';
   for (const ev of s.events) {
-    out += `    <event id="${escXml(ev.id)}" year="${ev.year}" name="${escXml(ev.name)}"/>\n`;
+    let attrs = `id="${escXml(ev.id)}" track="${escXml(ev.trackId || '')}" year="${ev.year}"`;
+    if (ev.endYear != null && !isNaN(ev.endYear)) attrs += ` end="${ev.endYear}"`;
+    attrs += ` name="${escXml(ev.name)}"`;
+    if (ev.description) {
+      out += `    <event ${attrs}>\n`;
+      out += `      <description>${escXml(ev.description)}</description>\n`;
+      out += `    </event>\n`;
+    } else {
+      out += `    <event ${attrs}/>\n`;
+    }
   }
   out += '  </events>\n\n';
 
@@ -763,10 +790,12 @@ function chooseLabelInterval() {
 
 function renderHeader() {
   const axis = document.getElementById('year-axis');
-  const track = document.getElementById('event-track');
+  const tracksWrap = document.getElementById('event-tracks');
+  const cornerTracks = document.getElementById('corner-tracks');
   // year-axis 안에 indicator 자식이 있으니 그것만 빼고 비움
   [...axis.querySelectorAll('.year-tick, .year-label')].forEach(el => el.remove());
-  track.innerHTML = '';
+  tracksWrap.innerHTML = '';
+  cornerTracks.innerHTML = '';
 
   const labelInterval = chooseLabelInterval();
   const minorInterval = labelInterval >= 200 ? labelInterval / 2 : 100;
@@ -790,15 +819,144 @@ function renderHeader() {
     }
   }
 
+  // 사건 오버레이를 year-axis 위로도 연장 (세로 선이 연도 표시 행을 가로지름)
+  if (showEventOverlay) {
+    for (const ev of state.events) {
+      if (hiddenEventIds.has(ev.id)) continue;
+      const isRange = ev.endYear != null && !isNaN(ev.endYear) && ev.endYear !== ev.year;
+      if (isRange) {
+        const x1 = yearToX(ev.year);
+        const x2 = yearToX(ev.endYear);
+        if (x2 < 0 || x1 > totalWidth()) continue;
+        const box = document.createElement('div');
+        box.className = 'event-overlay-box axis-overlay';
+        box.style.left = x1 + 'px';
+        box.style.width = Math.max(2, x2 - x1) + 'px';
+        axis.appendChild(box);
+      } else {
+        if (ev.year < state.config.startYear || ev.year > state.config.endYear) continue;
+        const line = document.createElement('div');
+        line.className = 'event-overlay-line axis-overlay';
+        line.style.left = yearToX(ev.year) + 'px';
+        axis.appendChild(line);
+      }
+    }
+  }
+
+  // 트랙(라인)별 헤더 렌더
+  const tracks = state.eventTracks?.length ? state.eventTracks : [{ id: 'evt_default', name: '' }];
+  tracks.forEach((t, idx) => {
+    // 좌측 corner: 트랙 라벨 + 삭제 버튼
+    const crow = document.createElement('div');
+    crow.className = 'corner-track-row';
+    const label = t.name?.trim() || `라인 ${idx + 1}`;
+    crow.innerHTML = `
+      <span class="track-label">${escHtml(label)}</span>
+      <button class="track-del" data-del-track="${escAttr(t.id)}" title="라인 삭제">×</button>
+    `;
+    cornerTracks.appendChild(crow);
+
+    // 우측: 트랙 마커/막대 영역
+    const row = document.createElement('div');
+    row.className = 'event-track-row';
+    row.dataset.trackId = t.id;
+    tracksWrap.appendChild(row);
+
+    // 이 트랙의 사건들 렌더
+    for (const ev of state.events) {
+      if (ev.trackId !== t.id) continue;
+      const isRange = ev.endYear != null && !isNaN(ev.endYear) && ev.endYear !== ev.year;
+      const evStart = ev.year;
+      const evEnd = isRange ? ev.endYear : ev.year;
+      if (evEnd < state.config.startYear || evStart > state.config.endYear) continue;
+
+      const hidden = hiddenEventIds.has(ev.id);
+      const onClick = e => { e.stopPropagation(); toggleEventHidden(ev.id); };
+      const onDblClick = e => { e.stopPropagation(); openEventModal(ev.id); };
+      if (isRange) {
+        const x1 = yearToX(evStart);
+        const x2 = yearToX(evEnd);
+        const range = document.createElement('div');
+        range.className = 'event-range' + (hidden ? ' event-hidden' : '');
+        range.style.left = x1 + 'px';
+        range.style.width = Math.max(2, x2 - x1) + 'px';
+        range.dataset.eventId = ev.id;
+        range.title = `${ev.name} (${fmtYear(evStart)} ~ ${fmtYear(evEnd)}) — 클릭: 선 표시/숨김, 더블클릭: 편집`;
+        range.innerHTML =
+          `<div class="bar"></div>` +
+          `<div class="label">${escHtml(ev.name)} (${fmtYear(evStart)} ~ ${fmtYear(evEnd)})</div>`;
+        range.addEventListener('click', onClick);
+        range.addEventListener('dblclick', onDblClick);
+        row.appendChild(range);
+      } else {
+        const m = document.createElement('div');
+        m.className = 'event-marker' + (hidden ? ' event-hidden' : '');
+        m.style.left = yearToX(evStart) + 'px';
+        m.dataset.eventId = ev.id;
+        m.title = '클릭: 선 표시/숨김, 더블클릭: 편집';
+        m.innerHTML = `<div class="dot"></div><div class="label">${escHtml(ev.name)} (${fmtYear(evStart)})</div>`;
+        m.addEventListener('click', onClick);
+        m.addEventListener('dblclick', onDblClick);
+        row.appendChild(m);
+      }
+    }
+  });
+
+  // corner의 삭제 버튼 이벤트
+  cornerTracks.querySelectorAll('[data-del-track]').forEach(btn => {
+    btn.addEventListener('click', () => removeEventTrack(btn.dataset.delTrack));
+  });
+}
+
+// 런타임 플래그 — 저장/영속화 안 함, 페이지 새로고침 시 기본값으로 복귀
+let showEventOverlay = true;
+let hiddenEventIds = new Set();  // 화면에서 숨길 사건 ID들 (저장 안 됨)
+
+function applyOverlayVisibility() {
+  const layer = document.getElementById('events-overlay-layer');
+  if (!layer) return;
+  layer.style.display = showEventOverlay ? '' : 'none';
+}
+
+function toggleEventHidden(id) {
+  if (hiddenEventIds.has(id)) hiddenEventIds.delete(id);
+  else hiddenEventIds.add(id);
+  render();
+}
+
+function setupOverlayToggle() {
+  const cb = document.getElementById('overlay-toggle');
+  if (!cb) return;
+  cb.addEventListener('change', () => {
+    showEventOverlay = cb.checked;
+    applyOverlayVisibility();
+  });
+}
+
+function renderEventOverlay() {
+  const layer = document.getElementById('events-overlay-layer');
+  if (!layer) return;
+  layer.innerHTML = '';
+  applyOverlayVisibility();
   for (const ev of state.events) {
-    if (ev.year < state.config.startYear || ev.year > state.config.endYear) continue;
-    const m = document.createElement('div');
-    m.className = 'event-marker';
-    m.style.left = yearToX(ev.year) + 'px';
-    m.dataset.eventId = ev.id;
-    m.innerHTML = `<div class="dot"></div><div class="label">${escHtml(ev.name)} (${fmtYear(ev.year)})</div>`;
-    m.addEventListener('click', e => { e.stopPropagation(); openEventModal(ev.id); });
-    track.appendChild(m);
+    if (hiddenEventIds.has(ev.id)) continue;
+    const isRange = ev.endYear != null && !isNaN(ev.endYear) && ev.endYear !== ev.year;
+    if (isRange) {
+      const x1 = yearToX(ev.year);
+      const x2 = yearToX(ev.endYear);
+      if (x2 < 0 || x1 > totalWidth()) continue;
+      const box = document.createElement('div');
+      box.className = 'event-overlay-box';
+      box.style.left = x1 + 'px';
+      box.style.width = Math.max(2, x2 - x1) + 'px';
+      layer.appendChild(box);
+    } else {
+      if (ev.year < state.config.startYear || ev.year > state.config.endYear) continue;
+      const line = document.createElement('div');
+      line.className = 'event-overlay-line';
+      line.style.left = yearToX(ev.year) + 'px';
+      layer.appendChild(line);
+    }
   }
 }
 
@@ -1021,7 +1179,30 @@ function render() {
   renderLeftLabels();
   renderGridBg();
   renderEntries();
+  renderEventOverlay();
   updateIndicator();
+}
+
+function addEventTrack() {
+  if (!state.eventTracks) state.eventTracks = [];
+  state.eventTracks.push({ id: genId('evt'), name: '' });
+  persist(); render();
+}
+
+function removeEventTrack(trackId) {
+  if (!state.eventTracks?.length) return;
+  if (state.eventTracks.length <= 1) {
+    alert('마지막 라인은 삭제할 수 없습니다.');
+    return;
+  }
+  const onTrack = state.events.filter(e => e.trackId === trackId).length;
+  const msg = onTrack > 0
+    ? `이 라인에 사건 ${onTrack}건이 있습니다. 라인과 함께 모두 삭제됩니다. 진행할까요?`
+    : '라인을 삭제할까요?';
+  if (!confirm(msg)) return;
+  state.events = state.events.filter(e => e.trackId !== trackId);
+  state.eventTracks = state.eventTracks.filter(t => t.id !== trackId);
+  persist(); render();
 }
 
 // ============================================================
@@ -1106,12 +1287,16 @@ function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 // 사건 트랙 클릭 (빈 곳 클릭 시 추가)
 // ============================================================
 function setupEventTrack() {
-  const track = document.getElementById('event-track');
-  track.addEventListener('click', e => {
-    if (e.target !== track) return; // 마커 클릭은 버블에서 막음
-    const r = track.getBoundingClientRect();
+  const tracksWrap = document.getElementById('event-tracks');
+  // 이벤트 위임: 라인 행의 빈 영역 클릭 시 해당 라인에 사건 추가
+  tracksWrap.addEventListener('click', e => {
+    const row = e.target.closest('.event-track-row');
+    if (!row) return;
+    if (e.target !== row) return; // 마커/막대 클릭은 stopPropagation으로 막힘
+    const trackId = row.dataset.trackId;
+    const r = row.getBoundingClientRect();
     const y = Math.round(xToYear(e.clientX - r.left));
-    openEventModal(null, y);
+    openEventModal(null, y, trackId);
   });
 }
 
@@ -1617,30 +1802,74 @@ function openEntryModal(id, defaultCountryIds) {
 // ============================================================
 // 모달 - 사건
 // ============================================================
-function openEventModal(id, defaultYear) {
+function openEventModal(id, defaultYear, defaultTrackId) {
   const ev = id ? state.events.find(x => x.id === id) : null;
+  if (!state.eventTracks?.length) state.eventTracks = [{ id: 'evt_default', name: '' }];
+
+  function buildTrackOpts(currentTrackId) {
+    const tracks = state.eventTracks;
+    const opts = tracks.map((t, i) =>
+      `<option value="${escAttr(t.id)}"${t.id === currentTrackId ? ' selected' : ''}>${escHtml(t.name?.trim() || `라인 ${i+1}`)}</option>`
+    ).join('');
+    return opts + `<option value="__NEW__">＋ 새 라인 추가</option>`;
+  }
+
+  const currentTrack = ev?.trackId || defaultTrackId || state.eventTracks[0].id;
+  const trackOpts = buildTrackOpts(currentTrack);
+
+  const yearVal = ev?.year ?? defaultYear ?? 0;
+  const endVal = ev?.endYear ?? ev?.year ?? defaultYear ?? 0;
   const html = `
     <label>이름
-      <input name="name" type="text" value="${escAttr(ev?.name)}" required>
+      <input name="ev_name" type="text" value="${escAttr(ev?.name)}" required>
     </label>
-    <label>연도
-      <input name="year" type="number" step="1" value="${ev?.year ?? defaultYear ?? 0}" required>
+    <label>라인
+      <select name="ev_track">${trackOpts}</select>
     </label>
+    <div class="row">
+      <label>연도(시작)
+        <input name="ev_year" type="number" step="1" value="${yearVal}" required>
+      </label>
+      <label>끝 연도
+        <input name="ev_endYear" type="number" step="1" value="${endVal}">
+      </label>
+    </div>
     <label>설명
-      <textarea name="description">${escHtml(ev?.description)}</textarea>
+      <textarea name="ev_description">${escHtml(ev?.description)}</textarea>
     </label>
   `;
   openModal(ev ? '사건 편집' : '사건 추가', html,
     form => {
-      const name = form.name.value.trim();
-      const year = parseInt(form.year.value, 10);
-      const description = form.description.value.trim();
-      if (!name || isNaN(year)) return false;
-      if (ev) { Object.assign(ev, { name, year, description }); }
-      else    { state.events.push({ id: genId('ev'), name, year, description }); }
+      const $ = sel => form.querySelector(sel);
+      const name = $('[name="ev_name"]').value.trim();
+      const year = parseInt($('[name="ev_year"]').value, 10);
+      const endYearRaw = parseInt($('[name="ev_endYear"]').value, 10);
+      const endYear = !isNaN(endYearRaw) && endYearRaw !== year ? endYearRaw : null;
+      const trackId = $('[name="ev_track"]').value;
+      const description = $('[name="ev_description"]').value.trim();
+      if (!name || isNaN(year)) { alert('이름과 시작 연도는 필수입니다.'); return false; }
+      if (trackId === '__NEW__') { alert('라인을 선택하세요.'); return false; }
+      if (endYear != null && endYear < year) { alert('끝 연도는 시작 연도 이상이어야 합니다.'); return false; }
+      if (ev) { Object.assign(ev, { name, year, endYear, trackId, description }); }
+      else    { state.events.push({ id: genId('ev'), trackId, name, year, endYear, description }); }
     },
     ev ? () => { state.events = state.events.filter(x => x.id !== ev.id); } : null
   );
+
+  // 트랙 새로 추가 핸들러
+  const form = document.getElementById('modal-form');
+  const trackSel = form.querySelector('[name="ev_track"]');
+  if (trackSel) {
+    trackSel.addEventListener('change', () => {
+      if (trackSel.value !== '__NEW__') return;
+      const newTrack = { id: genId('evt'), name: '' };
+      state.eventTracks.push(newTrack);
+      // 트랙 변경은 사건 저장 전에도 즉시 반영 (헤더에 새 라인 표시)
+      persist();
+      render();
+      trackSel.innerHTML = buildTrackOpts(newTrack.id);
+    });
+  }
 }
 
 function escAttr(s) { return escHtml(s ?? ''); }
@@ -1754,6 +1983,7 @@ async function init() {
   setupEventTrack();
   setupRangeAndZoom();
   setupDragAndDrop();
+  setupOverlayToggle();
   setupImagePreviewGlobal();
   loadGithubConfig();
   render();

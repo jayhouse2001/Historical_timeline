@@ -2,7 +2,7 @@
   --row-height: 36px;
   --label-width: 220px;
   --header-height: 80px;
-  --event-track-height: 32px;
+  --event-track-height: 24px;
   --year-axis-height: 48px;
   --border: #d8dde3;
   --border-strong: #b9c0c8;
@@ -108,7 +108,7 @@ button.connected:hover { background: #a7f3d0; }
 .grid {
   display: grid;
   grid-template-columns: var(--label-width) 1fr;
-  grid-template-rows: var(--header-height) auto;
+  grid-template-rows: auto auto;
   /* width set dynamically via --content-width */
   width: calc(var(--label-width) + var(--content-width, 5100px));
 }
@@ -122,12 +122,34 @@ button.connected:hover { background: #a7f3d0; }
   display: flex;
   flex-direction: column;
 }
-.corner-top {
-  height: var(--event-track-height);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px; color: var(--muted);
+.corner-tracks {
+  display: flex;
+  flex-direction: column;
   border-bottom: 1px dashed var(--border);
 }
+.corner-track-row {
+  height: var(--event-track-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+  font-size: 11px;
+  color: var(--muted);
+  border-bottom: 1px dashed var(--border);
+}
+.corner-track-row:last-child { border-bottom: none; }
+.corner-track-row .track-label { font-weight: 500; }
+.corner-track-row .track-del {
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--danger);
+  padding: 0 5px;
+  border-radius: 3px;
+  font-size: 11px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.corner-track-row .track-del:hover { background: #ffeef0; }
 .corner-bottom {
   flex: 1;
   display: flex; align-items: center; justify-content: center;
@@ -143,12 +165,19 @@ button.connected:hover { background: #a7f3d0; }
   flex-direction: column;
   position: relative;
 }
-.event-track {
+.event-tracks {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px dashed var(--border);
+}
+.event-track-row {
   height: var(--event-track-height);
   position: relative;
   border-bottom: 1px dashed var(--border);
   cursor: crosshair;
+  overflow: hidden;
 }
+.event-track-row:last-child { border-bottom: none; }
 .year-axis {
   height: var(--year-axis-height);
   position: relative;
@@ -179,8 +208,8 @@ button.connected:hover { background: #a7f3d0; }
 
 .event-marker {
   position: absolute;
-  top: 4px;
-  bottom: 4px;
+  top: 1px;
+  bottom: 1px;
   transform: translateX(-50%);
   display: flex; flex-direction: column; align-items: center;
   font-size: 11px;
@@ -188,23 +217,94 @@ button.connected:hover { background: #a7f3d0; }
   z-index: 1;
 }
 .event-marker .dot {
-  width: 8px; height: 8px;
-  background: var(--accent);
+  width: 6px; height: 6px;
+  background: #f59e0b;
   border-radius: 50%;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
+  flex-shrink: 0;
 }
 .event-marker .label {
   background: white;
-  border: 1px solid var(--accent);
-  color: var(--accent);
+  border: 1px solid #d97706;
+  color: #92400e;
   padding: 0 4px;
   border-radius: 3px;
   white-space: nowrap;
-  max-width: 140px;
+  max-width: 240px;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 13px;
 }
-.event-marker:hover .label { background: var(--accent); color: white; }
+.event-marker:hover .label { background: #f59e0b; color: white; }
+
+/* Range event in track — thin bar + auto-width label */
+.event-range {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  cursor: pointer;
+  z-index: 1;
+}
+.event-range .bar {
+  position: absolute;
+  top: 1px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #f59e0b;
+  border-radius: 2px;
+}
+.event-range .label {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 1px solid #d97706;
+  color: #92400e;
+  padding: 0 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  line-height: 13px;
+}
+.event-range:hover .label { background: #f59e0b; color: white; }
+.event-range:hover .bar { background: #d97706; }
+
+/* 화면 표시가 꺼진 사건 — 상단 트랙에서 흐리게 보이지만 클릭 편집은 가능 */
+.event-marker.event-hidden,
+.event-range.event-hidden {
+  opacity: 0.35;
+}
+.event-marker.event-hidden .label,
+.event-range.event-hidden .label {
+  text-decoration: line-through;
+}
+
+/* Yellow overlay over country area (click-through) */
+.events-overlay-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+.event-overlay-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(217, 119, 6, 0.6);
+}
+.event-overlay-box {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(217, 119, 6, 0.15);
+}
+.axis-overlay { pointer-events: none; }
 
 /* Left labels */
 .rows-labels {
@@ -316,6 +416,7 @@ button.connected:hover { background: #a7f3d0; }
 .entries-layer {
   position: absolute;
   inset: 0;
+  z-index: 1;
 }
 
 .entry {

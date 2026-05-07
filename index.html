@@ -22,11 +22,14 @@
       <input type="range" id="zoom" min="0.2" max="5" step="0.1" value="1">
       <span id="zoom-value">1.0×</span>
     </label>
+    <label class="ctl" title="아래로 내려진 노란선/박스 표시 (저장 안됨)">
+      <input type="checkbox" id="overlay-toggle" checked> 사건선
+    </label>
     <span class="spacer"></span>
     <button data-action="add-region">+ 지역</button>
     <button data-action="add-country">+ 나라</button>
     <button data-action="add-entry" class="primary">+ 시기</button>
-    <button data-action="add-event">+ 사건</button>
+    <button data-action="add-event" title="사건 추가 — 모달에서 새 라인 생성도 가능">+ 사건</button>
     <span class="spacer"></span>
     <button data-action="connect-file" id="btn-file-connect" title="data 폴더에 직접 저장하려면 폴더 연결 (data.xml + 이미지)">📁 폴더 연결</button>
     <button data-action="github" id="btn-github" title="GitHub 자동 커밋 설정">📤 GitHub</button>
@@ -40,11 +43,11 @@
 <div class="scroll-container" id="scroll">
   <div class="grid" id="grid">
     <div class="corner sticky-left sticky-top">
-      <div class="corner-top">사건</div>
+      <div class="corner-tracks" id="corner-tracks"></div>
       <div class="corner-bottom">지역 / 나라</div>
     </div>
     <div class="header sticky-top" id="header">
-      <div class="event-track" id="event-track"></div>
+      <div class="event-tracks" id="event-tracks"></div>
       <div class="year-axis" id="year-axis">
         <div class="indicator-handle" id="indicator-handle"></div>
         <div class="indicator-label" id="indicator-label">0</div>
@@ -54,6 +57,7 @@
     <div class="rows-content" id="rows-content">
       <div class="grid-bg" id="grid-bg"></div>
       <div class="entries-layer" id="entries-layer"></div>
+      <div class="events-overlay-layer" id="events-overlay-layer"></div>
       <div class="indicator-line" id="indicator-line"></div>
     </div>
   </div>
