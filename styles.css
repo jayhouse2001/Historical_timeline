@@ -692,4 +692,106 @@ button.connected:hover { background: #a7f3d0; }
   object-fit: contain;
   background: #fafafa;
 }
+
+/* 디바이스/방향/크기 상태 표시 (좌상단 고정) */
+#device-status {
+  position: fixed;
+  top: 2px;
+  left: 4px;
+  z-index: 1000;
+  padding: 1px 5px;
+  background: rgba(15, 23, 42, 0.7);
+  color: #fff;
+  font-size: 10px;
+  font-family: monospace;
+  border-radius: 3px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   Mobile — 폰(세로 ≤600px / 가로 height ≤500px) 모두 커버
+   아이패드는 가로에서도 height 768+ 이라 안 걸림
+   ============================================================ */
+@media (max-width: 600px), (max-height: 500px) {
+  :root {
+    --label-width: 88px;
+    --row-height: 28px;
+    --event-track-height: 20px;
+    --year-axis-height: 36px;
+  }
+
+  /* 툴바: 줄바꿈 대신 가로 스크롤 → 세로 공간 최소화 */
+  .toolbar {
+    padding: 4px 6px;
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  .toolbar h1 { display: none; }   /* 제목 숨김 */
+  .controls {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+  .controls > * { flex-shrink: 0; }
+  .spacer { display: none; }
+
+  .ctl { font-size: 10px; gap: 3px; }
+  .ctl input[type="number"] { width: 56px; padding: 2px 4px; }
+  #zoom { width: 80px; }
+  #zoom-value { display: none; }
+
+  button {
+    padding: 3px 6px;
+    font-size: 11px;
+    border-radius: 4px;
+  }
+
+  /* 좌측 라벨 폭 축소 */
+  .region-header {
+    padding: 3px 6px;
+    font-size: 11px;
+    gap: 3px;
+  }
+  .region-header button.icon,
+  .country-row-label button.icon {
+    padding: 0 3px;
+    font-size: 9px;
+  }
+  .country-row-label {
+    padding: 0 2px 0 6px;
+    font-size: 10px;
+    gap: 2px;
+  }
+  .country-row-label .actions { right: 2px; gap: 1px; }
+
+  /* corner의 트랙 라벨도 작게 */
+  .corner-track-row {
+    font-size: 9px;
+    padding: 0 3px;
+  }
+  .corner-track-row .track-del {
+    padding: 0 3px;
+    font-size: 10px;
+  }
+  .corner-bottom { font-size: 11px; }
+
+  /* 사건 마커/막대 라벨 축소 */
+  .event-marker { font-size: 10px; }
+  .event-marker .label, .event-range .label {
+    font-size: 10px;
+    line-height: 12px;
+    max-width: 160px;
+    padding: 0 3px;
+  }
+  .event-marker .dot { width: 5px; height: 5px; }
+  .event-range .bar { height: 3px; }
+
+  /* 모달도 작은 화면에 맞춰 */
+  .modal { width: 96vw; }
+  .modal-body { padding: 10px 12px; gap: 8px; }
+  .modal-body .image-preview { height: 220px; min-height: 140px; }
+}
 .entry-tooltip .tt-desc { margin-top: 6px; color: #444; white-space: pre-wrap; }

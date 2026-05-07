@@ -933,6 +933,20 @@ function setupOverlayToggle() {
   });
 }
 
+function updateDeviceStatus() {
+  const el = document.getElementById('device-status');
+  if (!el) return;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  // 미디어 쿼리와 동일 기준
+  const isMobile = w <= 600 || h <= 500;
+  const isTablet = !isMobile && (w <= 1024);
+  const kind = isMobile ? 'Mobile' : isTablet ? 'Tablet' : 'PC';
+  const orient = w >= h ? 'Landscape' : 'Portrait';
+  const dpr = (window.devicePixelRatio || 1).toFixed(1);
+  el.textContent = `${kind} · ${orient} · ${w}×${h} @${dpr}x`;
+}
+
 function renderEventOverlay() {
   const layer = document.getElementById('events-overlay-layer');
   if (!layer) return;
@@ -1984,6 +1998,9 @@ async function init() {
   setupRangeAndZoom();
   setupDragAndDrop();
   setupOverlayToggle();
+  updateDeviceStatus();
+  window.addEventListener('resize', updateDeviceStatus);
+  window.addEventListener('orientationchange', updateDeviceStatus);
   setupImagePreviewGlobal();
   loadGithubConfig();
   render();
