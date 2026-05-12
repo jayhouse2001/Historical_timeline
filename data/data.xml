@@ -57,10 +57,10 @@
     <entry id="e_5" name="고구려(37 ~ 668)" start="37" end="668" countries="c_2" color="#ddd6fe">
       <description>동명성왕(졸본)</description>
     </entry>
-    <entry id="e_6" name="통일 신라" start="668" end="892" countries="c_2 c_3 c_4" color="#fed7aa">
+    <entry id="e_6" name="통일 신라" start="668" end="892" countries="c_2 c_3 c_4" color="#fed7aa" group="silla_unified">
       <description>(668 ~ 892, 후삼국 분열 전)</description>
     </entry>
-    <entry id="e_6b" name="신라 (후삼국기)" start="892" end="935" countries="c_4" color="#fed7aa">
+    <entry id="e_6b" name="신라 (후삼국기)" start="892" end="935" countries="c_4" color="#fed7aa" group="silla_unified">
       <description>892 후백제 건국, 901 후고구려 건국으로 영역 축소
 935 경순왕 고려에 항복</description>
     </entry>
@@ -68,10 +68,10 @@
       <description>(901 ~ 918)
 궁예</description>
     </entry>
-    <entry id="e_8" name="고려" start="918" end="1392" countries="c_2" color="#bae6fd">
+    <entry id="e_8" name="고려" start="918" end="1392" countries="c_2" color="#bae6fd" group="goryeo">
       <description>왕건 (918 ~) — c_2 행에서는 즉시 시작</description>
     </entry>
-    <entry id="e_8b" name="고려 (통일 후)" start="936" end="1392" countries="c_3 c_4" color="#bae6fd">
+    <entry id="e_8b" name="고려 (통일 후)" start="936" end="1392" countries="c_3 c_4" color="#bae6fd" group="goryeo">
       <description>935 신라 흡수, 936 후백제 흡수 → 한반도 통일 — 다른 행으로 확장</description>
     </entry>
     <entry id="e_9" name="조선  (1392 ~ 1897)" start="1392" end="1897" countries="c_2 c_3 c_4" color="#bbf7d0">
@@ -219,30 +219,30 @@ BC 139, 장건의 서역 원정</description>
     <entry id="e_36" name="북송" start="960" end="1127" countries="c_6 c_6_2 c_6_3" color="#fed7aa">
       <description>(960 ~ 1127)</description>
     </entry>
-    <entry id="e_37" name="남송" start="1127" end="1271" countries="c_6 c_6_2 c_6_3" color="#fecaca">
+    <entry id="e_37" name="남송" start="1127" end="1271" countries="c_6 c_6_2 c_6_3" color="#fecaca" group="southern_song">
       <description>(1127 ~ 1271, 원 건국 전)</description>
     </entry>
-    <entry id="e_37b" name="남송 (잔존)" start="1271" end="1279" countries="c_6_2 c_6_3" color="#fecaca">
+    <entry id="e_37b" name="남송 (잔존)" start="1271" end="1279" countries="c_6_2 c_6_3" color="#fecaca" group="southern_song">
       <description>1271 쿠빌라이 원 건국으로 북부 상실
 1279 애산 전투 → 멸망</description>
     </entry>
-    <entry id="e_38" name="원" start="1271" end="1368" countries="c_6" color="#bae6fd">
+    <entry id="e_38" name="원" start="1271" end="1368" countries="c_6" color="#bae6fd" group="yuan">
       <description>1271 쿠빌라이 칸 건국 (북부에서 시작)</description>
     </entry>
-    <entry id="e_38b" name="원 (남송 정복 후)" start="1279" end="1368" countries="c_6_2 c_6_3" color="#bae6fd">
+    <entry id="e_38b" name="원 (남송 정복 후)" start="1279" end="1368" countries="c_6_2 c_6_3" color="#bae6fd" group="yuan">
       <description>1279 남송 멸망 → 전국 통일</description>
     </entry>
-    <entry id="e_39" name="명" start="1368" end="1636" countries="c_6 c_6_2 c_6_3" color="#bbf7d0">
+    <entry id="e_39" name="명" start="1368" end="1636" countries="c_6 c_6_2 c_6_3" color="#bbf7d0" group="ming">
       <description>(1368 ~ 1636, 청 건국 전)</description>
     </entry>
-    <entry id="e_39b" name="명 (말기 / 남명)" start="1636" end="1644" countries="c_6_2 c_6_3" color="#bbf7d0">
+    <entry id="e_39b" name="명 (말기 / 남명)" start="1636" end="1644" countries="c_6_2 c_6_3" color="#bbf7d0" group="ming">
       <description>1636 청 건국으로 북부 상실
 1644 이자성에 의해 북경 함락 → 청 입관</description>
     </entry>
-    <entry id="e_40" name="청" start="1636" end="1912" countries="c_6" color="#e9d5ff">
+    <entry id="e_40" name="청" start="1636" end="1912" countries="c_6" color="#e9d5ff" group="qing">
       <description>1636 누르하치 후예 홍타이지 황제 즉위 (만주에서 시작)</description>
     </entry>
-    <entry id="e_40b" name="청 (입관 후)" start="1644" end="1912" countries="c_6_2 c_6_3" color="#e9d5ff">
+    <entry id="e_40b" name="청 (입관 후)" start="1644" end="1912" countries="c_6_2 c_6_3" color="#e9d5ff" group="qing">
       <description>1644 북경 입성 → 중국 전토 지배</description>
     </entry>
     <entry id="e_41" name="중화민국" start="1912" end="1928" countries="c_6 c_6_2 c_6_3" color="#fde68a">
@@ -361,10 +361,10 @@ BC 480, 크세르크세스
       <description>왕조
 (661 ~ 750)</description>
     </entry>
-    <entry id="e_75" name="아바스 왕조 (전성기)" start="750" end="1037" countries="c_11 c_12 c_13" color="#ddd6fe">
+    <entry id="e_75" name="아바스 왕조 (전성기)" start="750" end="1037" countries="c_11 c_12 c_13" color="#ddd6fe" group="abbasid">
       <description>(750 ~ 1037, 셀주크 진입 전 — 실질 통치 시기)</description>
     </entry>
-    <entry id="e_75b" name="아바스 (잔존 칼리파)" start="1037" end="1258" countries="c_11" color="#ddd6fe">
+    <entry id="e_75b" name="아바스 (잔존 칼리파)" start="1037" end="1258" countries="c_11" color="#ddd6fe" group="abbasid">
       <description>(1037 ~ 1258)
 셀주크/호라즘/몽골에 실권 상실, 바그다드의 명목상 칼리파로만 존속
 1258 몽골 훌라구에 의해 바그다드 함락 → 멸망</description>

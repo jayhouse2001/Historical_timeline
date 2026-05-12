@@ -511,6 +511,7 @@ function parseXml(text) {
     endYear:   parseInt(el.getAttribute('end'),   10),
     countryIds: (el.getAttribute('countries') || '').split(/\s+/).filter(Boolean),
     color: el.getAttribute('color') || '',
+    group: el.getAttribute('group') || '',
     description: el.querySelector('description')?.textContent?.trim() || '',
     images: [...el.querySelectorAll('image')].map(im => im.textContent?.trim()).filter(Boolean)
   }));
@@ -561,7 +562,8 @@ function serializeXml(s) {
       `id="${escXml(e.id)}" name="${escXml(e.name)}" ` +
       `start="${e.startYear}" end="${e.endYear}" ` +
       `countries="${escXml(e.countryIds.join(' '))}"` +
-      (e.color ? ` color="${escXml(e.color)}"` : '');
+      (e.color ? ` color="${escXml(e.color)}"` : '') +
+      (e.group ? ` group="${escXml(e.group)}"` : '');
     const imgs = (e.images || []).filter(Boolean);
     if (!e.description && imgs.length === 0) {
       out += `    <entry ${attrs}/>\n`;
@@ -1106,6 +1108,8 @@ function renderEntries() {
   layer.innerHTML = '';
   const { countryRowIdx } = buildRowLayout();
 
+  // 1) 모든 바 정의 수집
+  const bars = [];
   for (const e of state.entries) {
     const idxs = e.countryIds.map(id => countryRowIdx.get(id)).filter(i => i != null);
     if (idxs.length === 0) continue;
@@ -1113,27 +1117,74 @@ function renderEntries() {
     const x1 = yearToX(e.startYear);
     const x2 = yearToX(e.endYear);
     const w = Math.max(2, x2 - x1);
-
     for (const g of groups) {
       const top = g[0] * ROW_HEIGHT + 2;
       const h   = g.length * ROW_HEIGHT - 4;
-      const bar = document.createElement('div');
-      bar.className = 'entry';
-      bar.style.left = x1 + 'px';
-      bar.style.top = top + 'px';
-      bar.style.width = w + 'px';
-      bar.style.height = h + 'px';
-      bar.style.background = e.color || COLOR_PALETTE[hash(e.id) % COLOR_PALETTE.length];
-      bar.dataset.entryId = e.id;
-      const imgCount = (e.images || []).length;
+      bars.push({
+        entry: e, x1, w, top, h,
+        rowStart: g[0], rowEnd: g[g.length - 1],
+        mergeTop: false, mergeBottom: false, mergeLeft: false, mergeRight: false,
+        hideText: false
+      });
+    }
+  }
+
+  // 2) group 별로 묶어서 인접한 변 표시
+  const byGroup = new Map();
+  for (const b of bars) {
+    const gid = b.entry.group;
+    if (!gid) continue;
+    if (!byGroup.has(gid)) byGroup.set(gid, []);
+    byGroup.get(gid).push(b);
+  }
+  for (const gbars of byGroup.values()) {
+    // 면적 가장 큰 바에만 이름 노출
+    let primary = gbars[0];
+    for (const b of gbars) if ((b.w * b.h) > (primary.w * primary.h)) primary = b;
+    for (const b of gbars) if (b !== primary) b.hideText = true;
+    // 변별 인접성 판정
+    for (let i = 0; i < gbars.length; i++) {
+      for (let j = i + 1; j < gbars.length; j++) {
+        const a = gbars[i], c = gbars[j];
+        const xOverlap = Math.max(a.x1, c.x1) < Math.min(a.x1 + a.w, c.x1 + c.w);
+        const yOverlap = Math.max(a.top, c.top) < Math.min(a.top + a.h, c.top + c.h);
+        if (a.rowEnd + 1 === c.rowStart && xOverlap) { a.mergeBottom = true; c.mergeTop = true; }
+        else if (c.rowEnd + 1 === a.rowStart && xOverlap) { c.mergeBottom = true; a.mergeTop = true; }
+        else if (Math.abs((a.x1 + a.w) - c.x1) < 1 && yOverlap) { a.mergeRight = true; c.mergeLeft = true; }
+        else if (Math.abs((c.x1 + c.w) - a.x1) < 1 && yOverlap) { c.mergeRight = true; a.mergeLeft = true; }
+      }
+    }
+  }
+
+  // 3) DOM 출력
+  for (const b of bars) {
+    const e = b.entry;
+    let { x1, w, top, h } = b;
+    if (b.mergeTop)    { top -= 2; h += 2; }
+    if (b.mergeBottom) { h += 2; }
+    const bar = document.createElement('div');
+    bar.className = 'entry' + (b.hideText ? ' entry-secondary' : '');
+    if (e.group) bar.dataset.group = e.group;
+    bar.style.left = x1 + 'px';
+    bar.style.top = top + 'px';
+    bar.style.width = w + 'px';
+    bar.style.height = h + 'px';
+    bar.style.background = e.color || COLOR_PALETTE[hash(e.id) % COLOR_PALETTE.length];
+    if (b.mergeTop)    { bar.style.borderTopColor = 'transparent';    bar.style.borderTopLeftRadius = '0';    bar.style.borderTopRightRadius = '0'; }
+    if (b.mergeBottom) { bar.style.borderBottomColor = 'transparent'; bar.style.borderBottomLeftRadius = '0'; bar.style.borderBottomRightRadius = '0'; }
+    if (b.mergeLeft)   { bar.style.borderLeftColor = 'transparent';   bar.style.borderTopLeftRadius = '0';    bar.style.borderBottomLeftRadius = '0'; }
+    if (b.mergeRight)  { bar.style.borderRightColor = 'transparent';  bar.style.borderTopRightRadius = '0';   bar.style.borderBottomRightRadius = '0'; }
+    bar.dataset.entryId = e.id;
+    const imgCount = (e.images || []).length;
+    if (!b.hideText) {
       bar.innerHTML = `<span class="name">${escHtml(e.name)}</span>` +
                       (imgCount > 0 ? `<span class="img-badge" title="이미지 ${imgCount}장">🖼${imgCount > 1 ? imgCount : ''}</span>` : '');
-      bar.addEventListener('click', ev => { ev.stopPropagation(); openEntryModal(e.id); });
-      bar.addEventListener('mouseenter', ev => showTooltip(ev, e));
-      bar.addEventListener('mousemove',  ev => moveTooltip(ev));
-      bar.addEventListener('mouseleave', hideTooltip);
-      layer.appendChild(bar);
     }
+    bar.addEventListener('click', ev => { ev.stopPropagation(); openEntryModal(e.id); });
+    bar.addEventListener('mouseenter', ev => showTooltip(ev, e));
+    bar.addEventListener('mousemove',  ev => moveTooltip(ev));
+    bar.addEventListener('mouseleave', hideTooltip);
+    layer.appendChild(bar);
   }
 }
 
