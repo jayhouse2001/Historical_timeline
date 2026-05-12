@@ -85,7 +85,7 @@
       <description>(1910 ~ 
 1945)</description>
     </entry>
-    <entry id="e_12" name="대한민국 (1945 ~ )" start="1945" end="2050" countries="c_2 c_3 c_4" color="#a7f3d0"/>
+    <entry id="e_12" name="대한민국 (1945 ~ )" start="1945" end="2026" countries="c_2 c_3 c_4" color="#a7f3d0"/>
     <entry id="e_13" name="백제(18 ~ 660)" start="18" end="660" countries="c_3" color="#bfdbfe">
       <description>온조왕(위례성)</description>
     </entry>
@@ -101,7 +101,7 @@
     <entry id="e_18" name="헤이안" start="794" end="1185" countries="c_5" color="#bae6fd"/>
     <entry id="e_19" name="무로마치" start="1336" end="1573" countries="c_5" color="#bbf7d0"/>
     <entry id="e_20" name="도쿠가와" start="1603" end="1868" countries="c_5" color="#e9d5ff"/>
-    <entry id="e_21" name="일본국" start="1868" end="2050" countries="c_5" color="#fde68a"/>
+    <entry id="e_21" name="일본국" start="1868" end="2026" countries="c_5" color="#fde68a"/>
     <entry id="e_22" name="하 왕조" start="-2070" end="-1600" countries="c_6 c_6_2 c_6_3" color="#a7f3d0">
       <description>(BC 2000년 경 ~ 600년 경)</description>
     </entry>
@@ -253,7 +253,7 @@ BC 139, 장건의 서역 원정</description>
     <entry id="e_42" name="국민당 정부" start="1928" end="1949" countries="c_6 c_6_2 c_6_3" color="#a7f3d0">
       <description>(1928 ~ 1949)</description>
     </entry>
-    <entry id="e_43" name="중화인민공화국" start="1949" end="2050" countries="c_6 c_6_2 c_6_3" color="#bfdbfe"/>
+    <entry id="e_43" name="중화인민공화국" start="1949" end="2026" countries="c_6 c_6_2 c_6_3" color="#bfdbfe"/>
     <entry id="e_44" name="흉노" start="-400" end="48" countries="c_7 c_8" color="#fbcfe8">
       <description>(BC 4세기 ?  ~ AD 48)
 BC 57년에 동서 분열 후 BC 53년 서흉노 소멸 후 동흉노만 남음</description>
@@ -275,12 +275,10 @@ BC 57년에 동서 분열 후 BC 53년 서흉노 소멸 후 동흉노만 남음<
 멸망 by 몽골</description>
     </entry>
     <entry id="e_51" name="몽골" start="1243" end="1368" countries="c_7 c_8 c_9" color="#fde68a"/>
-    <entry id="e_52" name="몽골" start="1368" end="1635" countries="c_7" color="#a7f3d0"/>
-    <entry id="e_53" name="몽골국" start="1924" end="2050" countries="c_7" color="#bfdbfe"/>
+    <entry id="e_52" name="몽골" start="1368" end="1635" countries="c_7 c_8" color="#a7f3d0"/>
+    <entry id="e_53" name="몽골국" start="1924" end="2026" countries="c_7 c_8" color="#bfdbfe"/>
     <entry id="e_54" name="선비" start="93" end="234" countries="c_8" color="#fbcfe8"/>
     <entry id="e_55" name="서돌궐 멸망 by 내분" start="581" end="657" countries="c_8" color="#ddd6fe"/>
-    <entry id="e_56" name="후 몽골" start="1368" end="1635" countries="c_8" color="#fed7aa"/>
-    <entry id="e_57" name="몽골국" start="1924" end="2050" countries="c_8" color="#fecaca"/>
     <entry id="e_58" name="스키타이" start="-800" end="-300" countries="c_9" color="#bae6fd">
       <description>(BC 8세기 ~ BC 3 세기)</description>
     </entry>
@@ -332,7 +330,7 @@ BC 480, 크세르크세스
     <entry id="e_66" name="오스만 투르크" start="1299" end="1922" countries="c_10 c_11" color="#fed7aa">
       <description>(1299 ~ 1922)</description>
     </entry>
-    <entry id="e_67" name="이라크 왕국" start="1932" end="2050" countries="c_10" color="#fecaca"/>
+    <entry id="e_67" name="이라크 왕국" start="1932" end="2026" countries="c_10" color="#fecaca"/>
     <entry id="e_68" name="고대 아시리아 (20세기 ~ 15세기)" start="-2000" end="-1500" countries="c_11" color="#bae6fd">
       <description>메소포타미아 북부(티그리스강 중상류, 바빌론과 국경)</description>
     </entry>
@@ -458,7 +456,7 @@ BC 666 아시리아에 패배(아시리아 아슈르바니팔 2세)
     <entry id="e_95" name="맘루크 투르크" start="1250" end="1517" countries="c_13" color="#ddd6fe">
       <description>(1250 ~ 1517)</description>
     </entry>
-    <entry id="e_96" name="오스만/이집트" start="1517" end="2050" countries="c_13" color="#fed7aa"/>
+    <entry id="e_96" name="오스만/이집트" start="1517" end="2026" countries="c_13" color="#fed7aa"/>
     <entry id="e_97" name="미케네/미노아 문명" start="-2000" end="-1200" countries="c_14" color="#fecaca">
       <description>(에게 문명) BC 1250 트로이 전쟁</description>
     </entry>
@@ -484,7 +482,7 @@ BC 666 아시리아에 패배(아시리아 아슈르바니팔 2세)
     <entry id="e_104" name="동로마 제국(비잔티움 제국)" start="395" end="1453" countries="c_15 c_16" color="#fbcfe8">
       <description>(395 ~ 1453)</description>
     </entry>
-    <entry id="e_105" name="이탈리아" start="1861" end="2050" countries="c_15" color="#ddd6fe"/>
+    <entry id="e_105" name="이탈리아" start="1861" end="2026" countries="c_15" color="#ddd6fe"/>
     <entry id="e_106" name="서로마 제국" start="395" end="476" countries="c_17" color="#fed7aa">
       <description>(395 ~ 476)</description>
     </entry>
@@ -498,7 +496,7 @@ BC 666 아시리아에 패배(아시리아 아슈르바니팔 2세)
     <entry id="e_112" name="카페 왕조" start="987" end="1328" countries="c_19" color="#a7f3d0"/>
     <entry id="e_113" name="발루아" start="1328" end="1589" countries="c_19" color="#bfdbfe"/>
     <entry id="e_114" name="부르봉" start="1589" end="1792" countries="c_19" color="#fbcfe8"/>
-    <entry id="e_115" name="프랑스 공화국" start="1792" end="2050" countries="c_19" color="#ddd6fe"/>
+    <entry id="e_115" name="프랑스 공화국" start="1792" end="2026" countries="c_19" color="#ddd6fe"/>
   </entries>
 
   <eventTracks>
