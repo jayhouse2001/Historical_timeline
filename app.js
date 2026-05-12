@@ -719,21 +719,21 @@ async function loadInitial() {
       return 'dir';
     } catch (e) { console.warn('dirHandle로 data.xml 읽기 실패:', e); }
   }
-  // 1) localStorage
-  const cached = localStorage.getItem(STORAGE_KEY);
-  if (cached) {
-    try { state = parseXml(cached); return 'cache'; }
-    catch (e) { console.warn('localStorage 캐시 파싱 실패, 무시:', e); }
-  }
-  // 2) data.xml fetch
+  // 1) data.xml fetch (항상 우선 — 캐시 무시)
   try {
-    const res = await fetch('data/data.xml', { cache: 'no-cache' });
+    const res = await fetch('data/data.xml?_=' + Date.now(), { cache: 'no-cache' });
     if (res.ok) {
       const text = await res.text();
       state = parseXml(text);
       return 'file';
     }
   } catch (_) { /* file:// 등 */ }
+  // 2) fetch 실패 시 localStorage 폴백
+  const cached = localStorage.getItem(STORAGE_KEY);
+  if (cached) {
+    try { state = parseXml(cached); return 'cache'; }
+    catch (e) { console.warn('localStorage 캐시 파싱 실패, 무시:', e); }
+  }
   // 3) 내장 시드
   state = parseXml(SEED_XML);
   return 'seed';
