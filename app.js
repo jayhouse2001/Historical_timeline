@@ -718,6 +718,8 @@ function reorderLineGroup(dragId, targetId, isBefore) {
   if (idx < 0) return;
   cleaned.splice(isBefore ? idx : idx + 1, 0, dragId);
   state.viewOrder.lineGroups = cleaned;
+  const map = new Map((state.lineGroups || []).map(g => [g.id, g]));
+  state.lineGroups = cleaned.map(id => map.get(id)).filter(Boolean);
 }
 
 function reorderTrack(groupId, dragId, targetId, isBefore) {
@@ -728,6 +730,18 @@ function reorderTrack(groupId, dragId, targetId, isBefore) {
   if (idx < 0) return;
   cleaned.splice(isBefore ? idx : idx + 1, 0, dragId);
   state.viewOrder.tracks[groupId] = cleaned;
+  // state.eventTracks 재정렬: 그룹별 묶음 재구성
+  const tracksInGroup = state.eventTracks.filter(t => t.groupId === groupId);
+  const tmap = new Map(tracksInGroup.map(t => [t.id, t]));
+  const ordered = cleaned.map(id => tmap.get(id)).filter(Boolean);
+  const rebuilt = [];
+  const seen = new Set();
+  for (const g of (state.lineGroups || [])) {
+    if (g.id === groupId) { rebuilt.push(...ordered); seen.add(g.id); }
+    else { rebuilt.push(...state.eventTracks.filter(t => t.groupId === g.id)); seen.add(g.id); }
+  }
+  for (const t of state.eventTracks) if (!seen.has(t.groupId)) rebuilt.push(t);
+  state.eventTracks = rebuilt;
 }
 
 function getOrderedRegions() {
@@ -763,6 +777,9 @@ function reorderRegion(dragId, targetId, isBefore) {
   if (targetIdx < 0) return;
   cleaned.splice(isBefore ? targetIdx : targetIdx + 1, 0, dragId);
   state.viewOrder.regions = cleaned;
+  // 실제 배열도 동일 순서로 재정렬 (data.xml 에 반영)
+  const map = new Map(state.regions.map(r => [r.id, r]));
+  state.regions = cleaned.map(id => map.get(id)).filter(Boolean);
 }
 
 function reorderCountry(regionId, dragId, targetId, isBefore) {
@@ -778,6 +795,25 @@ function reorderCountry(regionId, dragId, targetId, isBefore) {
   if (insertIdx < 0) return;
   cleaned.splice(insertIdx, 0, ...dragGroup);
   state.viewOrder.countries[regionId] = cleaned;
+  // state.countries 도 같은 영역(region) 내에서 순서 일치시키기
+  const inRegion = state.countries.filter(c => c.regionId === regionId);
+  const map = new Map(inRegion.map(c => [c.id, c]));
+  const ordered = cleaned.map(id => map.get(id)).filter(Boolean);
+  const others = state.countries.filter(c => c.regionId !== regionId);
+  // region 별 그룹을 region 순서대로 다시 묶음
+  const rebuilt = [];
+  const seenRegions = new Set();
+  for (const r of state.regions) {
+    if (r.id === regionId) { rebuilt.push(...ordered); seenRegions.add(r.id); }
+    else {
+      const cs = others.filter(c => c.regionId === r.id);
+      rebuilt.push(...cs);
+      seenRegions.add(r.id);
+    }
+  }
+  // region 에 없는 country 는 마지막에
+  for (const c of state.countries) if (!seenRegions.has(c.regionId)) rebuilt.push(c);
+  state.countries = rebuilt;
 }
 
 async function loadInitial() {
@@ -2246,7 +2282,7 @@ function setupDragAndDrop() {
     } else {
       reorderCountry(dragRegionId, dragId, t.dataset.dragCountry, isBefore);
     }
-    persistRuntime();
+    persist();
     render();
   });
 
@@ -2323,7 +2359,7 @@ function setupDragAndDrop() {
     } else {
       reorderTrack(tDragGroupId, tDragId, t.dataset.dragTrack, isBefore);
     }
-    persistRuntime();
+    persist();
     render();
   });
 }
