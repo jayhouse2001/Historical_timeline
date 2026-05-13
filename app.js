@@ -454,7 +454,7 @@ function openGithubModal() {
 function defaultState() {
   return {
     config: { startYear: -3000, endYear: 2100, pixelsPerYear: 1.0, zoom: 1.0, indicatorYear: 0 },
-    regions: [], countries: [], entries: [], events: [], eventTracks: [{ id: 'evt_default', name: '' }]
+    regions: [], countries: [], entries: [], events: [], eventTracks: [{ id: 'evt_default', name: '', groupId: 'lg_default' }], lineGroups: [{ id: 'lg_default', name: '기본' }]
   };
 }
 
@@ -515,11 +515,24 @@ function parseXml(text) {
     description: el.querySelector('description')?.textContent?.trim() || '',
     images: [...el.querySelectorAll('image')].map(im => im.textContent?.trim()).filter(Boolean)
   }));
-  let eventTracks = [...doc.querySelectorAll('eventTracks > eventTrack')].map(el => ({
+  let lineGroups = [...doc.querySelectorAll('lineGroups > lineGroup')].map(el => ({
     id: el.getAttribute('id'),
     name: el.getAttribute('name') || ''
   }));
-  if (!eventTracks.length) eventTracks = [{ id: 'evt_default', name: '' }];
+  let eventTracks = [...doc.querySelectorAll('eventTracks > eventTrack')].map(el => ({
+    id: el.getAttribute('id'),
+    name: el.getAttribute('name') || '',
+    groupId: el.getAttribute('group') || ''
+  }));
+  if (!eventTracks.length) eventTracks = [{ id: 'evt_default', name: '', groupId: '' }];
+  // 그룹 마이그레이션: 그룹 없으면 기본 그룹 생성 + 모든 트랙 배속
+  if (!lineGroups.length) {
+    lineGroups = [{ id: 'lg_default', name: '기본' }];
+    eventTracks.forEach(t => { if (!t.groupId) t.groupId = 'lg_default'; });
+  } else {
+    const valid = new Set(lineGroups.map(g => g.id));
+    eventTracks.forEach(t => { if (!valid.has(t.groupId)) t.groupId = lineGroups[0].id; });
+  }
 
   const events = [...doc.querySelectorAll('events > event')].map(el => {
     const endAttr = el.getAttribute('end');
@@ -536,7 +549,7 @@ function parseXml(text) {
 
   return {
     config: { startYear, endYear, pixelsPerYear: 1.0, zoom: state?.config?.zoom ?? 1.0, indicatorYear: state?.config?.indicatorYear ?? 0 },
-    regions, countries, entries, events, eventTracks
+    regions, countries, entries, events, eventTracks, lineGroups
   };
 }
 
@@ -576,9 +589,15 @@ function serializeXml(s) {
   }
   out += '  </entries>\n\n';
 
+  out += '  <lineGroups>\n';
+  for (const g of (s.lineGroups || [])) {
+    out += `    <lineGroup id="${escXml(g.id)}"${g.name ? ` name="${escXml(g.name)}"` : ''}/>\n`;
+  }
+  out += '  </lineGroups>\n\n';
+
   out += '  <eventTracks>\n';
   for (const t of (s.eventTracks || [])) {
-    out += `    <eventTrack id="${escXml(t.id)}"${t.name ? ` name="${escXml(t.name)}"` : ''}/>\n`;
+    out += `    <eventTrack id="${escXml(t.id)}"${t.groupId ? ` group="${escXml(t.groupId)}"` : ''}${t.name ? ` name="${escXml(t.name)}"` : ''}/>\n`;
   }
   out += '  </eventTracks>\n\n';
 
@@ -638,8 +657,10 @@ function loadRuntime() {
 // View order (drag reorder, data.xml에 영향 없음)
 // ============================================================
 function reconcileViewOrder() {
-  if (!state.viewOrder) state.viewOrder = { regions: [], countries: {} };
+  if (!state.viewOrder) state.viewOrder = { regions: [], countries: {}, lineGroups: [], tracks: {} };
   if (!state.viewOrder.countries) state.viewOrder.countries = {};
+  if (!state.viewOrder.lineGroups) state.viewOrder.lineGroups = [];
+  if (!state.viewOrder.tracks) state.viewOrder.tracks = {};
   const knownR = new Set(state.regions.map(r => r.id));
   state.viewOrder.regions = (state.viewOrder.regions || []).filter(id => knownR.has(id));
   for (const r of state.regions) {
@@ -656,6 +677,57 @@ function reconcileViewOrder() {
   for (const rId of Object.keys(state.viewOrder.countries)) {
     if (!knownR.has(rId)) delete state.viewOrder.countries[rId];
   }
+  // 라인 그룹 / 트랙
+  const knownLG = new Set((state.lineGroups || []).map(g => g.id));
+  state.viewOrder.lineGroups = state.viewOrder.lineGroups.filter(id => knownLG.has(id));
+  for (const g of (state.lineGroups || [])) {
+    if (!state.viewOrder.lineGroups.includes(g.id)) state.viewOrder.lineGroups.push(g.id);
+  }
+  for (const g of (state.lineGroups || [])) {
+    const knownT = new Set((state.eventTracks || []).filter(t => t.groupId === g.id).map(t => t.id));
+    if (!Array.isArray(state.viewOrder.tracks[g.id])) state.viewOrder.tracks[g.id] = [];
+    state.viewOrder.tracks[g.id] = state.viewOrder.tracks[g.id].filter(id => knownT.has(id));
+    for (const t of (state.eventTracks || []).filter(t => t.groupId === g.id)) {
+      if (!state.viewOrder.tracks[g.id].includes(t.id)) state.viewOrder.tracks[g.id].push(t.id);
+    }
+  }
+  for (const gId of Object.keys(state.viewOrder.tracks)) {
+    if (!knownLG.has(gId)) delete state.viewOrder.tracks[gId];
+  }
+}
+
+function getOrderedLineGroups() {
+  if (!state.viewOrder?.lineGroups?.length) return state.lineGroups || [];
+  const map = new Map((state.lineGroups || []).map(g => [g.id, g]));
+  return state.viewOrder.lineGroups.map(id => map.get(id)).filter(Boolean);
+}
+
+function getOrderedTracks(groupId) {
+  const all = (state.eventTracks || []).filter(t => t.groupId === groupId);
+  const ord = state.viewOrder?.tracks?.[groupId];
+  if (!ord?.length) return all;
+  const map = new Map(all.map(t => [t.id, t]));
+  return ord.map(id => map.get(id)).filter(Boolean);
+}
+
+function reorderLineGroup(dragId, targetId, isBefore) {
+  if (dragId === targetId) return;
+  const list = state.viewOrder.lineGroups;
+  const cleaned = list.filter(id => id !== dragId);
+  const idx = cleaned.indexOf(targetId);
+  if (idx < 0) return;
+  cleaned.splice(isBefore ? idx : idx + 1, 0, dragId);
+  state.viewOrder.lineGroups = cleaned;
+}
+
+function reorderTrack(groupId, dragId, targetId, isBefore) {
+  const list = state.viewOrder.tracks[groupId];
+  if (!list) return;
+  const cleaned = list.filter(id => id !== dragId);
+  const idx = cleaned.indexOf(targetId);
+  if (idx < 0) return;
+  cleaned.splice(isBefore ? idx : idx + 1, 0, dragId);
+  state.viewOrder.tracks[groupId] = cleaned;
 }
 
 function getOrderedRegions() {
@@ -825,6 +897,7 @@ function renderHeader() {
   if (showEventOverlay) {
     for (const ev of state.events) {
       if (hiddenEventIds.has(ev.id)) continue;
+      if (hiddenTrackIds.has(ev.trackId)) continue;
       const isRange = ev.endYear != null && !isNaN(ev.endYear) && ev.endYear !== ev.year;
       if (isRange) {
         const x1 = yearToX(ev.year);
@@ -845,26 +918,55 @@ function renderHeader() {
     }
   }
 
-  // 트랙(라인)별 헤더 렌더
-  const tracks = state.eventTracks?.length ? state.eventTracks : [{ id: 'evt_default', name: '' }];
-  tracks.forEach((t, idx) => {
-    // 좌측 corner: 트랙 라벨 + 삭제 버튼
-    const crow = document.createElement('div');
-    crow.className = 'corner-track-row';
-    const label = t.name?.trim() || `라인 ${idx + 1}`;
-    crow.innerHTML = `
-      <span class="track-label">${escHtml(label)}</span>
-      <button class="track-del" data-del-track="${escAttr(t.id)}" title="라인 삭제">×</button>
+  // 라인 그룹/트랙 렌더
+  const groups = getOrderedLineGroups();
+  let trackIdx = 0;
+  for (const g of groups) {
+    // 그룹 헤더 (좌)
+    const gh = document.createElement('div');
+    gh.className = 'corner-group-row';
+    gh.draggable = true;
+    gh.dataset.dragLineGroup = g.id;
+    gh.innerHTML = `
+      <span class="group-name">${escHtml(g.name || '(이름 없음)')}</span>
+      <div class="actions">
+        <button class="icon" data-edit-line-group="${escAttr(g.id)}" title="그룹 이름 편집">✎</button>
+        <button class="icon" data-add-track-to-group="${escAttr(g.id)}" title="이 그룹에 라인 추가">+</button>
+        <button class="icon danger-icon" data-del-line-group="${escAttr(g.id)}" title="그룹 삭제">🗑</button>
+      </div>
     `;
-    cornerTracks.appendChild(crow);
+    cornerTracks.appendChild(gh);
+    // 그룹 헤더 (우 — 빈 매칭)
+    const ghr = document.createElement('div');
+    ghr.className = 'event-group-row';
+    tracksWrap.appendChild(ghr);
 
-    // 우측: 트랙 마커/막대 영역
-    const row = document.createElement('div');
-    row.className = 'event-track-row';
-    row.dataset.trackId = t.id;
-    tracksWrap.appendChild(row);
+    const gtracks = getOrderedTracks(g.id);
+    gtracks.forEach(t => {
+      const isHidden = hiddenTrackIds.has(t.id);
+      const label = t.name?.trim() || `라인 ${++trackIdx}`;
+      const crow = document.createElement('div');
+      crow.className = 'corner-track-row' + (isHidden ? ' track-hidden' : '');
+      crow.draggable = true;
+      crow.dataset.dragTrack = t.id;
+      crow.dataset.dragTrackGroup = g.id;
+      crow.innerHTML = `
+        <button class="track-toggle" data-toggle-track="${escAttr(t.id)}" title="${isHidden ? '라인 표시' : '라인 숨김'}">${isHidden ? '☐' : '☑'}</button>
+        <span class="track-label">${escHtml(label)}</span>
+        <div class="actions">
+          <button class="icon" data-edit-track="${escAttr(t.id)}" title="라인 이름 편집">✎</button>
+          <button class="icon danger-icon" data-del-track="${escAttr(t.id)}" title="라인 삭제">🗑</button>
+        </div>
+      `;
+      cornerTracks.appendChild(crow);
 
-    // 이 트랙의 사건들 렌더
+      const row = document.createElement('div');
+      row.className = 'event-track-row' + (isHidden ? ' track-hidden' : '');
+      row.dataset.trackId = t.id;
+      tracksWrap.appendChild(row);
+      if (isHidden) return;
+      // 이 트랙의 사건들 렌더 (inline IIFE)
+      (function(){
     for (const ev of state.events) {
       if (ev.trackId !== t.id) continue;
       const isRange = ev.endYear != null && !isNaN(ev.endYear) && ev.endYear !== ev.year;
@@ -902,17 +1004,51 @@ function renderHeader() {
         row.appendChild(m);
       }
     }
-  });
+      })();
+    });
+  }
 
-  // corner의 삭제 버튼 이벤트
+  // corner의 토글/편집/삭제 + 그룹 액션
+  cornerTracks.querySelectorAll('[data-toggle-track]').forEach(btn => {
+    btn.addEventListener('click', () => toggleTrackHidden(btn.dataset.toggleTrack));
+  });
+  cornerTracks.querySelectorAll('[data-edit-track]').forEach(btn => {
+    btn.addEventListener('click', () => renameEventTrack(btn.dataset.editTrack));
+  });
   cornerTracks.querySelectorAll('[data-del-track]').forEach(btn => {
     btn.addEventListener('click', () => removeEventTrack(btn.dataset.delTrack));
+  });
+  cornerTracks.querySelectorAll('[data-edit-line-group]').forEach(btn => {
+    btn.addEventListener('click', () => renameLineGroup(btn.dataset.editLineGroup));
+  });
+  cornerTracks.querySelectorAll('[data-add-track-to-group]').forEach(btn => {
+    btn.addEventListener('click', () => addEventTrack(btn.dataset.addTrackToGroup));
+  });
+  cornerTracks.querySelectorAll('[data-del-line-group]').forEach(btn => {
+    btn.addEventListener('click', () => removeLineGroup(btn.dataset.delLineGroup));
   });
 }
 
 // 런타임 플래그 — 저장/영속화 안 함, 페이지 새로고침 시 기본값으로 복귀
 let showEventOverlay = true;
 let hiddenEventIds = new Set();  // 화면에서 숨길 사건 ID들 (저장 안 됨)
+let hiddenTrackIds = new Set();  // 화면에서 숨길 라인(트랙) ID들 (저장 안 됨)
+
+function toggleTrackHidden(trackId) {
+  if (hiddenTrackIds.has(trackId)) hiddenTrackIds.delete(trackId);
+  else hiddenTrackIds.add(trackId);
+  render();
+}
+
+function renameEventTrack(trackId) {
+  const t = state.eventTracks?.find(x => x.id === trackId);
+  if (!t) return;
+  const v = prompt('라인 이름:', t.name || '');
+  if (v == null) return;
+  t.name = v.trim();
+  persist();
+  render();
+}
 
 function applyOverlayVisibility() {
   const layer = document.getElementById('events-overlay-layer');
@@ -1239,6 +1375,7 @@ function hideTooltip() { document.getElementById('entry-tooltip').hidden = true;
 // 전체 렌더
 // ============================================================
 function render() {
+  computeAutoRange();
   applySize();
   renderHeader();
   renderLeftLabels();
@@ -1248,9 +1385,11 @@ function render() {
   updateIndicator();
 }
 
-function addEventTrack() {
+function addEventTrack(groupId) {
   if (!state.eventTracks) state.eventTracks = [];
-  state.eventTracks.push({ id: genId('evt'), name: '' });
+  if (!state.lineGroups?.length) state.lineGroups = [{ id: 'lg_default', name: '기본' }];
+  const gid = groupId || state.lineGroups[0].id;
+  state.eventTracks.push({ id: genId('evt'), name: '', groupId: gid });
   persist(); render();
 }
 
@@ -1267,6 +1406,41 @@ function removeEventTrack(trackId) {
   if (!confirm(msg)) return;
   state.events = state.events.filter(e => e.trackId !== trackId);
   state.eventTracks = state.eventTracks.filter(t => t.id !== trackId);
+  persist(); render();
+}
+
+function addLineGroup() {
+  if (!state.lineGroups) state.lineGroups = [];
+  const name = prompt('라인 그룹 이름:', '');
+  if (name == null) return;
+  state.lineGroups.push({ id: genId('lg'), name: name.trim() });
+  persist(); render();
+}
+
+function renameLineGroup(groupId) {
+  const g = state.lineGroups?.find(x => x.id === groupId);
+  if (!g) return;
+  const v = prompt('라인 그룹 이름:', g.name || '');
+  if (v == null) return;
+  g.name = v.trim();
+  persist(); render();
+}
+
+function removeLineGroup(groupId) {
+  if (!state.lineGroups?.length) return;
+  if (state.lineGroups.length <= 1) {
+    alert('마지막 라인 그룹은 삭제할 수 없습니다.');
+    return;
+  }
+  const inGroup = (state.eventTracks || []).filter(t => t.groupId === groupId);
+  const msg = inGroup.length > 0
+    ? `이 그룹의 라인 ${inGroup.length}개와 그 사건들이 모두 삭제됩니다. 진행할까요?`
+    : '라인 그룹을 삭제할까요?';
+  if (!confirm(msg)) return;
+  const trackIds = new Set(inGroup.map(t => t.id));
+  state.events = (state.events || []).filter(e => !trackIds.has(e.trackId));
+  state.eventTracks = (state.eventTracks || []).filter(t => t.groupId !== groupId);
+  state.lineGroups = state.lineGroups.filter(g => g.id !== groupId);
   persist(); render();
 }
 
@@ -1371,27 +1545,36 @@ function setupEventTrack() {
 function setupRangeAndZoom() {
   const zoom = document.getElementById('zoom');
   const zoomVal = document.getElementById('zoom-value');
+  const zMin = parseFloat(zoom.min), zMax = parseFloat(zoom.max), zStep = parseFloat(zoom.step) || 0.1;
   zoom.value = state.config.zoom;
   zoomVal.textContent = state.config.zoom.toFixed(1) + '×';
-  zoom.addEventListener('input', () => {
-    state.config.zoom = parseFloat(zoom.value);
+  function applyZoom(v) {
+    v = Math.min(zMax, Math.max(zMin, v));
+    state.config.zoom = parseFloat(v.toFixed(2));
+    zoom.value = state.config.zoom;
     zoomVal.textContent = state.config.zoom.toFixed(1) + '×';
     render();
     persist();
-  });
-  const rs = document.getElementById('range-start');
-  const re = document.getElementById('range-end');
-  rs.value = state.config.startYear;
-  re.value = state.config.endYear;
-  function applyRange() {
-    const a = parseInt(rs.value, 10), b = parseInt(re.value, 10);
-    if (isNaN(a) || isNaN(b) || a >= b) return;
-    state.config.startYear = a;
-    state.config.endYear   = b;
-    render(); persist();
   }
-  rs.addEventListener('change', applyRange);
-  re.addEventListener('change', applyRange);
+  zoom.addEventListener('input', () => applyZoom(parseFloat(zoom.value)));
+  document.getElementById('zoom-minus').addEventListener('click', () => applyZoom(state.config.zoom - zStep));
+  document.getElementById('zoom-plus').addEventListener('click',  () => applyZoom(state.config.zoom + zStep));
+}
+
+// 엔트리/이벤트로부터 범위 자동 계산
+function computeAutoRange() {
+  let lo = Infinity, hi = -Infinity;
+  for (const e of state.entries || []) {
+    if (Number.isFinite(e.startYear)) lo = Math.min(lo, e.startYear);
+    if (Number.isFinite(e.endYear))   hi = Math.max(hi, e.endYear);
+  }
+  for (const ev of state.events || []) {
+    if (Number.isFinite(ev.year))    { lo = Math.min(lo, ev.year);    hi = Math.max(hi, ev.year); }
+    if (Number.isFinite(ev.endYear)) hi = Math.max(hi, ev.endYear);
+  }
+  if (!Number.isFinite(lo) || !Number.isFinite(hi) || lo >= hi) { lo = 0; hi = 100; }
+  state.config.startYear = lo;
+  state.config.endYear   = hi;
 }
 
 // ============================================================
@@ -1403,6 +1586,7 @@ function setupToolbar() {
       const a = btn.dataset.action;
       if (a === 'add-region')  openRegionModal(null);
       if (a === 'add-country') openCountryModal(null);
+      if (a === 'add-line-group') addLineGroup();
       if (a === 'add-entry')   openEntryModal(null);
       if (a === 'add-event')   openEventModal(null, state.config.indicatorYear);
       if (a === 'export')      exportXml();
@@ -1869,7 +2053,8 @@ function openEntryModal(id, defaultCountryIds) {
 // ============================================================
 function openEventModal(id, defaultYear, defaultTrackId) {
   const ev = id ? state.events.find(x => x.id === id) : null;
-  if (!state.eventTracks?.length) state.eventTracks = [{ id: 'evt_default', name: '' }];
+  if (!state.eventTracks?.length) state.eventTracks = [{ id: 'evt_default', name: '', groupId: 'lg_default' }];
+  if (!state.lineGroups?.length) state.lineGroups = [{ id: 'lg_default', name: '기본' }];
 
   function buildTrackOpts(currentTrackId) {
     const tracks = state.eventTracks;
@@ -1927,7 +2112,8 @@ function openEventModal(id, defaultYear, defaultTrackId) {
   if (trackSel) {
     trackSel.addEventListener('change', () => {
       if (trackSel.value !== '__NEW__') return;
-      const newTrack = { id: genId('evt'), name: '' };
+      const gid = state.lineGroups?.[0]?.id || 'lg_default';
+      const newTrack = { id: genId('evt'), name: '', groupId: gid };
       state.eventTracks.push(newTrack);
       // 트랙 변경은 사건 저장 전에도 즉시 반영 (헤더에 새 라인 표시)
       persist();
@@ -2017,6 +2203,83 @@ function setupDragAndDrop() {
       reorderRegion(dragId, t.dataset.dragRegion, isBefore);
     } else {
       reorderCountry(dragRegionId, dragId, t.dataset.dragCountry, isBefore);
+    }
+    persistRuntime();
+    render();
+  });
+
+  // corner-tracks (라인 그룹/트랙) DnD
+  const troot = document.getElementById('corner-tracks');
+  if (!troot) return;
+  let tDragType = null, tDragId = null, tDragGroupId = null;
+
+  troot.addEventListener('dragstart', e => {
+    if (e.target.closest('.actions, button')) { e.preventDefault(); return; }
+    const trackEl = e.target.closest('[data-drag-track]');
+    const groupEl = e.target.closest('[data-drag-line-group]');
+    if (trackEl) {
+      tDragType = 'track';
+      tDragId = trackEl.dataset.dragTrack;
+      tDragGroupId = trackEl.dataset.dragTrackGroup;
+      trackEl.classList.add('dragging');
+    } else if (groupEl) {
+      tDragType = 'lineGroup';
+      tDragId = groupEl.dataset.dragLineGroup;
+      groupEl.classList.add('dragging');
+    } else {
+      e.preventDefault(); return;
+    }
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', tDragId);
+  });
+
+  troot.addEventListener('dragend', () => {
+    troot.querySelectorAll('.dragging, .drop-before, .drop-after').forEach(el => {
+      el.classList.remove('dragging', 'drop-before', 'drop-after');
+    });
+    tDragType = null; tDragId = null; tDragGroupId = null;
+  });
+
+  function findTrackTarget(e) {
+    if (tDragType === 'lineGroup') {
+      const t = e.target.closest('[data-drag-line-group]');
+      if (!t || t.dataset.dragLineGroup === tDragId) return null;
+      return t;
+    }
+    if (tDragType === 'track') {
+      const t = e.target.closest('[data-drag-track]');
+      if (!t || t.dataset.dragTrackGroup !== tDragGroupId) return null;
+      if (t.dataset.dragTrack === tDragId) return null;
+      return t;
+    }
+    return null;
+  }
+
+  troot.addEventListener('dragover', e => {
+    if (!tDragType) return;
+    const t = findTrackTarget(e);
+    if (!t) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const rect = t.getBoundingClientRect();
+    const isBefore = e.clientY < rect.top + rect.height / 2;
+    troot.querySelectorAll('.drop-before, .drop-after').forEach(el => {
+      el.classList.remove('drop-before', 'drop-after');
+    });
+    t.classList.add(isBefore ? 'drop-before' : 'drop-after');
+  });
+
+  troot.addEventListener('drop', e => {
+    if (!tDragType) return;
+    const t = findTrackTarget(e);
+    if (!t) return;
+    e.preventDefault();
+    const rect = t.getBoundingClientRect();
+    const isBefore = e.clientY < rect.top + rect.height / 2;
+    if (tDragType === 'lineGroup') {
+      reorderLineGroup(tDragId, t.dataset.dragLineGroup, isBefore);
+    } else {
+      reorderTrack(tDragGroupId, tDragId, t.dataset.dragTrack, isBefore);
     }
     persistRuntime();
     render();

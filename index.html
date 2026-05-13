@@ -16,12 +16,10 @@
     <label class="ctl">시점
       <input type="number" id="indicator-year" step="1" value="0">
     </label>
-    <label class="ctl">범위
-      <input type="number" id="range-start" step="100" value="-3000" title="시작 연도"> ~
-      <input type="number" id="range-end" step="100" value="2100" title="끝 연도">
-    </label>
     <label class="ctl">줌
+      <button type="button" id="zoom-minus" class="zoom-btn" title="축소">−</button>
       <input type="range" id="zoom" min="0.2" max="5" step="0.1" value="1">
+      <button type="button" id="zoom-plus" class="zoom-btn" title="확대">+</button>
       <span id="zoom-value">1.0×</span>
     </label>
     <label class="ctl" title="아래로 내려진 노란선/박스 표시 (저장 안됨)">
@@ -31,6 +29,7 @@
     <button data-action="add-region">+ 지역</button>
     <button data-action="add-country">+ 나라</button>
     <button data-action="add-entry" class="primary">+ 시기</button>
+    <button data-action="add-line-group" title="라인 그룹 추가">+ 라인 그룹</button>
     <button data-action="add-event" title="사건 추가 — 모달에서 새 라인 생성도 가능">+ 사건</button>
     <span class="spacer"></span>
     <button data-action="connect-file" id="btn-file-connect" title="data 폴더에 직접 저장하려면 폴더 연결 (data.xml + 이미지)">📁 폴더 연결</button>
