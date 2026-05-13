@@ -192,6 +192,23 @@ button.connected:hover { background: #a7f3d0; }
   border-bottom: 1px dashed var(--border);
   background: #f8fafc;
 }
+.corner-add-group-row {
+  height: var(--event-track-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--muted);
+  background: #fafbfc;
+  border-bottom: 1px dashed var(--border);
+  cursor: pointer;
+}
+.corner-add-group-row:hover { background: #eef2f7; color: #0f172a; }
+.event-add-group-row {
+  height: var(--event-track-height);
+  border-bottom: 1px dashed var(--border);
+  background: #fafbfc;
+}
 .corner-track-row .actions { display: inline-flex; gap: 2px; }
 .corner-track-row:last-child { border-bottom: none; }
 .corner-track-row .track-label {

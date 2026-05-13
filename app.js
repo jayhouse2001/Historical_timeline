@@ -1008,6 +1008,17 @@ function renderHeader() {
     });
   }
 
+  // 맨 마지막: "라인 그룹 추가" placeholder 행 (좌측 + 우측 매칭)
+  const addGroupRow = document.createElement('div');
+  addGroupRow.className = 'corner-add-group-row';
+  addGroupRow.title = '클릭하여 라인 그룹 추가';
+  addGroupRow.textContent = '+ 라인 그룹 추가';
+  addGroupRow.addEventListener('click', addLineGroup);
+  cornerTracks.appendChild(addGroupRow);
+  const addGroupRowR = document.createElement('div');
+  addGroupRowR.className = 'event-add-group-row';
+  tracksWrap.appendChild(addGroupRowR);
+
   // corner의 토글/편집/삭제 + 그룹 액션
   cornerTracks.querySelectorAll('[data-toggle-track]').forEach(btn => {
     btn.addEventListener('click', () => toggleTrackHidden(btn.dataset.toggleTrack));
