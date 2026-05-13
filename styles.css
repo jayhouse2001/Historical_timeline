@@ -797,19 +797,18 @@ button.connected:hover { background: #a7f3d0; }
   background: #fafafa;
 }
 
-/* 디바이스/방향/크기 상태 표시 (좌상단 고정) */
+/* 디바이스/방향/크기 상태 — 제목 옆 inline 표시 */
 #device-status {
-  position: fixed;
-  top: 2px;
-  left: 4px;
-  z-index: 1000;
-  padding: 1px 5px;
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
   background: rgba(15, 23, 42, 0.7);
   color: #fff;
   font-size: 10px;
   font-family: monospace;
+  font-weight: 400;
   border-radius: 3px;
-  pointer-events: none;
+  vertical-align: middle;
   white-space: nowrap;
 }
 

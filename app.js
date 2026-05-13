@@ -2339,6 +2339,14 @@ async function init() {
   setupImagePreviewGlobal();
   loadGithubConfig();
   render();
+  // 초기 스크롤: 0년(AD/BC 경계)을 화면 가운데로
+  const scroll = document.getElementById('scroll');
+  if (scroll) {
+    const rowsLabels = document.getElementById('rows-labels');
+    const labelW = rowsLabels ? rowsLabels.offsetWidth : 0;
+    const x0 = yearToX(0);
+    scroll.scrollLeft = Math.max(0, x0 - (scroll.clientWidth - labelW) / 2);
+  }
   if (source === 'cache') {
     console.info('localStorage 캐시에서 복원됨. 변경사항을 보존하려면 "내보내기" 후 data.xml에 덮어쓰세요.');
   }
