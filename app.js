@@ -1170,6 +1170,15 @@ function renderLeftLabels() {
     root.appendChild(block);
   }
 
+  // 맨 마지막: "지역 추가" placeholder 행
+  const addRow = document.createElement('div');
+  addRow.className = 'region-add-row';
+  addRow.dataset.addRegion = '1';
+  addRow.title = '클릭하여 지역 추가';
+  addRow.textContent = '+ 지역 추가';
+  root.appendChild(addRow);
+  addRow.addEventListener('click', () => openRegionModal(null));
+
   root.querySelectorAll('[data-edit-region]').forEach(btn => {
     btn.addEventListener('click', () => openRegionModal(btn.dataset.editRegion));
   });

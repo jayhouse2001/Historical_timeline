@@ -391,6 +391,16 @@ button.connected:hover { background: #a7f3d0; }
 }
 
 .region-block { border-bottom: 1px solid var(--border-strong); }
+.region-add-row {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  background: #fafbfc;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  text-align: center;
+}
+.region-add-row:hover { background: #eef2f7; color: #0f172a; }
 .region-header {
   background: var(--bg-region);
   padding: 6px 10px;
