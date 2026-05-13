@@ -903,7 +903,7 @@ function renderHeader() {
   const tracksWrap = document.getElementById('event-tracks');
   const cornerTracks = document.getElementById('corner-tracks');
   // year-axis 안에 indicator 자식이 있으니 그것만 빼고 비움
-  [...axis.querySelectorAll('.year-tick, .year-label')].forEach(el => el.remove());
+  [...axis.querySelectorAll('.year-tick, .year-label, .axis-overlay')].forEach(el => el.remove());
   tracksWrap.innerHTML = '';
   cornerTracks.innerHTML = '';
 
