@@ -807,7 +807,7 @@ button.connected:hover { background: #a7f3d0; }
   background: #fafafa;
 }
 
-/* 디바이스/방향/크기 상태 — 제목 옆 inline 표시 */
+/* 디바이스/방향/크기 상태 — 툴바 안에 항상 표시 */
 #device-status {
   display: inline-block;
   margin-left: 8px;
@@ -820,6 +820,7 @@ button.connected:hover { background: #a7f3d0; }
   border-radius: 3px;
   vertical-align: middle;
   white-space: nowrap;
+  align-self: center;
 }
 
 /* ============================================================
@@ -844,6 +845,7 @@ button.connected:hover { background: #a7f3d0; }
     -webkit-overflow-scrolling: touch;
   }
   .toolbar h1 { display: none; }   /* 제목 숨김 */
+  #device-status { flex-shrink: 0; margin-left: 0; }   /* 모바일에서도 항상 표시 */
   .controls {
     flex-wrap: nowrap;
     gap: 6px;
