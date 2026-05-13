@@ -897,7 +897,7 @@ function renderHeader() {
   if (showEventOverlay) {
     for (const ev of state.events) {
       if (hiddenEventIds.has(ev.id)) continue;
-      if (hiddenTrackIds.has(ev.trackId)) continue;
+      if (isTrackEffectivelyHidden(ev.trackId)) continue;
       const isRange = ev.endYear != null && !isNaN(ev.endYear) && ev.endYear !== ev.year;
       if (isRange) {
         const x1 = yearToX(ev.year);
@@ -922,12 +922,14 @@ function renderHeader() {
   const groups = getOrderedLineGroups();
   let trackIdx = 0;
   for (const g of groups) {
+    const collapsed = collapsedGroupIds.has(g.id);
     // 그룹 헤더 (좌)
     const gh = document.createElement('div');
-    gh.className = 'corner-group-row';
+    gh.className = 'corner-group-row' + (collapsed ? ' collapsed' : '');
     gh.draggable = true;
     gh.dataset.dragLineGroup = g.id;
     gh.innerHTML = `
+      <button class="group-toggle" data-toggle-group="${escAttr(g.id)}" title="${collapsed ? '펼치기' : '접기'}">${collapsed ? '▶' : '▼'}</button>
       <span class="group-name">${escHtml(g.name || '(이름 없음)')}</span>
       <div class="actions">
         <button class="icon" data-edit-line-group="${escAttr(g.id)}" title="그룹 이름 편집">✎</button>
@@ -940,6 +942,8 @@ function renderHeader() {
     const ghr = document.createElement('div');
     ghr.className = 'event-group-row';
     tracksWrap.appendChild(ghr);
+
+    if (collapsed) continue;  // 접힌 그룹은 트랙 렌더 생략
 
     const gtracks = getOrderedTracks(g.id);
     gtracks.forEach(t => {
@@ -1038,12 +1042,29 @@ function renderHeader() {
   cornerTracks.querySelectorAll('[data-del-line-group]').forEach(btn => {
     btn.addEventListener('click', () => removeLineGroup(btn.dataset.delLineGroup));
   });
+  cornerTracks.querySelectorAll('[data-toggle-group]').forEach(btn => {
+    btn.addEventListener('click', () => toggleGroupCollapsed(btn.dataset.toggleGroup));
+  });
 }
 
 // 런타임 플래그 — 저장/영속화 안 함, 페이지 새로고침 시 기본값으로 복귀
 let showEventOverlay = true;
 let hiddenEventIds = new Set();  // 화면에서 숨길 사건 ID들 (저장 안 됨)
 let hiddenTrackIds = new Set();  // 화면에서 숨길 라인(트랙) ID들 (저장 안 됨)
+let collapsedGroupIds = new Set();  // 접힌 라인 그룹 ID들 (저장 안 됨)
+
+function isTrackEffectivelyHidden(trackId) {
+  if (hiddenTrackIds.has(trackId)) return true;
+  const t = (state.eventTracks || []).find(x => x.id === trackId);
+  if (t && collapsedGroupIds.has(t.groupId)) return true;
+  return false;
+}
+
+function toggleGroupCollapsed(groupId) {
+  if (collapsedGroupIds.has(groupId)) collapsedGroupIds.delete(groupId);
+  else collapsedGroupIds.add(groupId);
+  render();
+}
 
 function toggleTrackHidden(trackId) {
   if (hiddenTrackIds.has(trackId)) hiddenTrackIds.delete(trackId);
