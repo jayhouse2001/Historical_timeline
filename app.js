@@ -1092,6 +1092,7 @@ function renderEventOverlay() {
   applyOverlayVisibility();
   for (const ev of state.events) {
     if (hiddenEventIds.has(ev.id)) continue;
+    if (hiddenTrackIds.has(ev.trackId)) continue;
     const isRange = ev.endYear != null && !isNaN(ev.endYear) && ev.endYear !== ev.year;
     if (isRange) {
       const x1 = yearToX(ev.year);
