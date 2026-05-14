@@ -538,4 +538,10 @@ BC 666 아시리아에 패배(아시리아 아슈르바니팔 2세)
     </event>
   </events>
 
+  <maps>
+    <map id="m_hittite_max" title="히타이트 제국 최대판도 (BC 1200경)" start="-1200" end="-1150" countries="c_10 c_11 c_13" image="data/images/motn0th0_hittites.png">
+      <description>BC 13세기 말 ~ 12세기 초, 히타이트 제국 최대 영역. 아나톨리아 중심, 시리아 북부·메소포타미아 상류·이집트 북쪽 국경까지 확장.</description>
+    </map>
+  </maps>
+
 </timeline>

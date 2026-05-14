@@ -547,9 +547,20 @@ function parseXml(text) {
     };
   });
 
+  const maps = [...doc.querySelectorAll('maps > map')].map(el => ({
+    id: el.getAttribute('id'),
+    title: el.getAttribute('title') || '',
+    startYear: parseInt(el.getAttribute('start'), 10),
+    endYear:   parseInt(el.getAttribute('end'),   10),
+    countryIds: (el.getAttribute('countries') || '').split(/\s+/).filter(Boolean),
+    image: el.getAttribute('image') || '',
+    source: el.getAttribute('source') || '',
+    description: el.querySelector('description')?.textContent?.trim() || ''
+  }));
+
   return {
     config: { startYear, endYear, pixelsPerYear: 1.0, zoom: state?.config?.zoom ?? 1.0, indicatorYear: state?.config?.indicatorYear ?? 0 },
-    regions, countries, entries, events, eventTracks, lineGroups
+    regions, countries, entries, events, eventTracks, lineGroups, maps
   };
 }
 
@@ -615,6 +626,18 @@ function serializeXml(s) {
     }
   }
   out += '  </events>\n\n';
+
+  out += '  <maps>\n';
+  for (const m of (s.maps || [])) {
+    let attrs = `id="${escXml(m.id)}" title="${escXml(m.title)}" start="${m.startYear}" end="${m.endYear}" countries="${escXml((m.countryIds || []).join(' '))}" image="${escXml(m.image)}"`;
+    if (m.source) attrs += ` source="${escXml(m.source)}"`;
+    if (m.description) {
+      out += `    <map ${attrs}>\n      <description>${escXml(m.description)}</description>\n    </map>\n`;
+    } else {
+      out += `    <map ${attrs}/>\n`;
+    }
+  }
+  out += '  </maps>\n\n';
 
   out += '</timeline>\n';
   return out;
@@ -1402,6 +1425,63 @@ function renderEntries() {
   }
 }
 
+function renderMaps() {
+  const layer = document.getElementById('maps-layer');
+  if (!layer) return;
+  layer.innerHTML = '';
+  const { countryRowIdx } = buildRowLayout();
+  for (const m of (state.maps || [])) {
+    if (!Array.isArray(m.countryIds) || !m.countryIds.length) continue;
+    const idxs = m.countryIds.map(id => countryRowIdx.get(id)).filter(i => i != null);
+    if (!idxs.length) continue;
+    const midYear = (m.startYear + m.endYear) / 2;
+    const cx = yearToX(midYear);
+    const top = Math.min(...idxs) * ROW_HEIGHT;
+    const bottom = (Math.max(...idxs) + 1) * ROW_HEIGHT;
+    const cy = (top + bottom) / 2;
+    const icon = document.createElement('div');
+    icon.className = 'map-icon';
+    icon.style.left = (cx - 12) + 'px';
+    icon.style.top = (cy - 12) + 'px';
+    icon.title = `${m.title} (${fmtYear(m.startYear)} ~ ${fmtYear(m.endYear)}) — 클릭하여 확대`;
+    icon.dataset.mapId = m.id;
+    icon.textContent = '🗺';
+    icon.addEventListener('click', e => { e.stopPropagation(); openMapModal(m.id); });
+    icon.addEventListener('mouseenter', e => showMapTooltip(e, m));
+    icon.addEventListener('mousemove',  e => moveTooltip(e));
+    icon.addEventListener('mouseleave', hideTooltip);
+    layer.appendChild(icon);
+  }
+}
+
+function showMapTooltip(evt, m) {
+  const tt = document.getElementById('entry-tooltip');
+  tt.hidden = false;
+  tt.innerHTML =
+    `<div class="tt-name">${escHtml(m.title)}</div>` +
+    `<div class="tt-period">${fmtYear(m.startYear)} ~ ${fmtYear(m.endYear)} (${m.endYear - m.startYear}년)</div>` +
+    (m.image ? `<img src="${escHtml(resolveImage(m.image))}" alt="" onerror="this.style.display='none'" style="max-width:480px;max-height:360px;">` : '') +
+    (m.description ? `<div class="tt-desc">${escHtml(m.description)}</div>` : '') +
+    (m.source ? `<div class="tt-desc" style="opacity:.7;font-size:11px">출처: ${escHtml(m.source)}</div>` : '');
+  moveTooltip(evt);
+}
+
+function openMapModal(mapId) {
+  const m = (state.maps || []).find(x => x.id === mapId);
+  if (!m) return;
+  const html =
+    `<div style="text-align:center;">` +
+    (m.image ? `<img src="${escHtml(resolveImage(m.image))}" alt="" style="max-width:100%;max-height:75vh;">` : '<div>(이미지 없음)</div>') +
+    `</div>` +
+    `<p style="margin-top:8px"><b>${escHtml(m.title)}</b> — ${fmtYear(m.startYear)} ~ ${fmtYear(m.endYear)}</p>` +
+    (m.description ? `<p>${escHtml(m.description)}</p>` : '') +
+    (m.source ? `<p style="opacity:.7;font-size:11px">출처: ${escHtml(m.source)}</p>` : '');
+  openModal(m.title || '지도', html, () => true, null);
+  // 읽기 전용이라 "저장" 버튼 숨기기
+  const saveBtn = document.getElementById('modal-save');
+  if (saveBtn) saveBtn.style.display = 'none';
+}
+
 function hash(s) {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
@@ -1459,6 +1539,7 @@ function render() {
   renderLeftLabels();
   renderGridBg();
   renderEntries();
+  renderMaps();
   renderEventOverlay();
   updateIndicator();
 }
@@ -1725,6 +1806,7 @@ function openModal(title, bodyHtml, onSave, onDelete) {
   const saveBtn = document.getElementById('modal-save');
   const cancelBtn = document.getElementById('modal-cancel');
   const delBtn = document.getElementById('modal-delete');
+  saveBtn.style.display = '';
   delBtn.style.display = onDelete ? '' : 'none';
 
   function close() {
