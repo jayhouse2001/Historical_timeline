@@ -1477,12 +1477,12 @@ function openMapModal(mapId, defaultYear) {
   for (const r of getOrderedRegions()) {
     const cs = getOrderedCountries(r.id);
     if (!cs.length) continue;
-    countryHtml += `<div class="map-region-group"><div class="map-region-title">${escHtml(r.name)}</div>`;
+    countryHtml += `<div class="map-region-group"><div class="map-region-title">${escHtml(r.name)}</div><div class="countries-grid">`;
     for (const c of cs) {
       const checked = selectedCids.has(c.id) ? ' checked' : '';
-      countryHtml += `<label class="map-country-cb"><input type="checkbox" data-cid="${escAttr(c.id)}"${checked}> ${escHtml(c.name)}</label>`;
+      countryHtml += `<label class="map-country-cb"><input type="checkbox" data-cid="${escAttr(c.id)}"${checked}>${escHtml(c.name)}</label>`;
     }
-    countryHtml += `</div>`;
+    countryHtml += `</div></div>`;
   }
 
   const html = `
