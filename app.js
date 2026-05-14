@@ -1466,20 +1466,116 @@ function showMapTooltip(evt, m) {
   moveTooltip(evt);
 }
 
-function openMapModal(mapId) {
-  const m = (state.maps || []).find(x => x.id === mapId);
-  if (!m) return;
-  const html =
-    `<div style="text-align:center;">` +
-    (m.image ? `<img src="${escHtml(resolveImage(m.image))}" alt="" style="max-width:100%;max-height:75vh;">` : '<div>(이미지 없음)</div>') +
-    `</div>` +
-    `<p style="margin-top:8px"><b>${escHtml(m.title)}</b> — ${fmtYear(m.startYear)} ~ ${fmtYear(m.endYear)}</p>` +
-    (m.description ? `<p>${escHtml(m.description)}</p>` : '') +
-    (m.source ? `<p style="opacity:.7;font-size:11px">출처: ${escHtml(m.source)}</p>` : '');
-  openModal(m.title || '지도', html, () => true, null);
-  // 읽기 전용이라 "저장" 버튼 숨기기
-  const saveBtn = document.getElementById('modal-save');
-  if (saveBtn) saveBtn.style.display = 'none';
+function openMapModal(mapId, defaultYear) {
+  const m = mapId ? (state.maps || []).find(x => x.id === mapId) : null;
+  const startVal = m?.startYear ?? (defaultYear ?? state.config.indicatorYear);
+  const endVal   = m?.endYear   ?? startVal;
+  const selectedCids = new Set(m?.countryIds || []);
+
+  // 지역-나라 체크박스 목록
+  let countryHtml = '';
+  for (const r of getOrderedRegions()) {
+    const cs = getOrderedCountries(r.id);
+    if (!cs.length) continue;
+    countryHtml += `<div class="map-region-group"><div class="map-region-title">${escHtml(r.name)}</div>`;
+    for (const c of cs) {
+      const checked = selectedCids.has(c.id) ? ' checked' : '';
+      countryHtml += `<label class="map-country-cb"><input type="checkbox" data-cid="${escAttr(c.id)}"${checked}> ${escHtml(c.name)}</label>`;
+    }
+    countryHtml += `</div>`;
+  }
+
+  const html = `
+    <label>제목
+      <input name="m_title" type="text" value="${escAttr(m?.title)}" required>
+    </label>
+    <div class="row">
+      <label>시작 연도 (BC는 음수)
+        <input name="m_start" type="number" step="1" value="${startVal}" required>
+      </label>
+      <label>끝 연도
+        <input name="m_end" type="number" step="1" value="${endVal}" required>
+      </label>
+    </div>
+    <label>이미지
+      <div style="display:flex; gap:6px;">
+        <input name="m_image" type="text" value="${escAttr(m?.image)}" placeholder="data/images/foo.png 또는 https://..." style="flex:1;">
+      </div>
+      <div style="display:flex; align-items:center; gap:6px; margin-top:4px;">
+        <input name="m_upload" type="file" accept="image/*" style="flex:1;">
+        <span id="m-upload-status" style="font-size:11px;"></span>
+      </div>
+      <div id="m-image-preview" style="margin-top:6px;"></div>
+    </label>
+    <label>커버 지역/나라 (다중 선택)
+      <div class="map-country-list">${countryHtml}</div>
+    </label>
+    <label>출처
+      <input name="m_source" type="text" value="${escAttr(m?.source)}" placeholder="예: Wikimedia Commons - https://...">
+    </label>
+    <label>설명
+      <textarea name="m_description">${escHtml(m?.description)}</textarea>
+    </label>
+  `;
+
+  openModal(m ? '지도 편집' : '지도 추가', html,
+    form => {
+      const t = form.m_title.value.trim();
+      const s = parseInt(form.m_start.value, 10);
+      const en = parseInt(form.m_end.value, 10);
+      const img = form.m_image.value.trim();
+      const src = form.m_source.value.trim();
+      const desc = form.m_description.value.trim();
+      const cids = [...form.querySelectorAll('.map-country-cb input:checked')].map(cb => cb.dataset.cid);
+      if (!t || isNaN(s) || isNaN(en)) { alert('제목과 연도는 필수입니다.'); return false; }
+      if (en < s) { alert('끝 연도는 시작 연도 이상이어야 합니다.'); return false; }
+      if (!cids.length) { alert('최소 하나의 나라를 선택하세요.'); return false; }
+      if (!img) { alert('이미지 경로 또는 업로드가 필요합니다.'); return false; }
+      if (m) {
+        Object.assign(m, { title: t, startYear: s, endYear: en, image: img, source: src, description: desc, countryIds: cids });
+      } else {
+        if (!state.maps) state.maps = [];
+        state.maps.push({ id: genId('m'), title: t, startYear: s, endYear: en, image: img, source: src, description: desc, countryIds: cids });
+      }
+    },
+    m ? () => { state.maps = (state.maps || []).filter(x => x.id !== m.id); } : null
+  );
+
+  // 이미지 업로드/미리보기
+  const form = document.getElementById('modal-form');
+  const uploader = form.querySelector('[name="m_upload"]');
+  const imgInput = form.querySelector('[name="m_image"]');
+  const status   = form.querySelector('#m-upload-status');
+  const preview  = form.querySelector('#m-image-preview');
+  function refreshPreview() {
+    const v = imgInput.value.trim();
+    preview.innerHTML = v ? `<img src="${escAttr(resolveImage(v))}" alt="" style="max-width:100%; max-height:240px; border:1px solid var(--border); border-radius:4px;">` : '';
+  }
+  refreshPreview();
+  imgInput.addEventListener('input', refreshPreview);
+  uploader.addEventListener('change', async () => {
+    const f = uploader.files?.[0];
+    if (!f) return;
+    if (!dirHandle && !githubConfig) {
+      status.textContent = '✗ 먼저 📁 폴더 또는 📤 GitHub 연결';
+      status.style.color = 'var(--danger)';
+      uploader.value = '';
+      return;
+    }
+    status.textContent = '업로드 중…';
+    status.style.color = 'var(--muted)';
+    try {
+      const path = await uploadImage(f);
+      imgInput.value = path;
+      refreshPreview();
+      status.textContent = '✓ 업로드 완료';
+      status.style.color = 'var(--accent)';
+    } catch (err) {
+      status.textContent = '✗ ' + (err.message || err);
+      status.style.color = 'var(--danger)';
+    }
+    uploader.value = '';
+  });
 }
 
 function hash(s) {
@@ -1677,6 +1773,14 @@ function setupIndicator() {
       updateIndicator();
       persist();
     }
+  });
+
+  // 연도축 더블클릭: 그 시점에 지도 추가
+  axis.addEventListener('dblclick', e => {
+    if (e.target.closest('.indicator-handle, .axis-overlay')) return;
+    const r = axis.getBoundingClientRect();
+    const y = Math.round(xToYear(e.clientX - r.left));
+    openMapModal(null, y);
   });
 }
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }

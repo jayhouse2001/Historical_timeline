@@ -582,6 +582,32 @@ button.connected:hover { background: #a7f3d0; }
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
   z-index: 10;
 }
+
+.map-country-list {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  background: white;
+}
+.map-region-group { margin-bottom: 6px; }
+.map-region-group:last-child { margin-bottom: 0; }
+.map-region-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+.map-country-cb {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-right: 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.map-country-cb input { margin: 0; }
 .entry .name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .entry .img-badge {
   width: 14px; height: 14px;
